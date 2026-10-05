@@ -170,6 +170,17 @@ h2.h{font-family:var(--serif);font-size:1.3rem;margin:30px 0 10px}
 .slinks a b{color:var(--navy)}
 .slinks a span{font-size:.84rem;color:var(--muted)}
 
+.sgroup{margin:0 0 18px}
+.sgroup h4{font-family:var(--serif);font-size:1.05rem;margin:0}
+.sgroup .sub{margin:0 0 8px;color:var(--muted);font-size:.88rem}
+.scard{border:1px solid var(--line);border-radius:8px;padding:10px 12px;margin:0 0 8px;display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center}
+.scard p{margin:0;font-family:var(--serif);font-size:1.05rem;font-weight:600}
+.scard .scodes{grid-column:1;font-size:.8rem;color:var(--muted)}
+.scard .btn{grid-column:2;grid-row:1 / span 2}
+.scard.on{border-color:var(--navy);box-shadow:inset 4px 0 0 var(--navy)}
+.sublist{margin:0 0 14px}
+@media (max-width:860px){.scard{grid-template-columns:1fr}.scard .btn{grid-column:1;grid-row:auto;justify-self:start}}
+
 /* tutor */
 .tutor-wrap{border:2px solid var(--navy);border-radius:10px;margin:0 0 26px;background:var(--sheet)}
 .tutor-wrap > summary{cursor:pointer;padding:12px 16px;font-family:var(--serif);font-weight:700;font-size:1.1rem;list-style:none;background:var(--soft);border-radius:8px}
@@ -274,7 +285,7 @@ const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp
 const filled = s => typeof s === "string" && s.trim().length > 0;
 
 function blankLesson(){ return {id:uid(), title:"", type:"regular", desc:"", materials:"", standards:[], objectives:[], procedure:"", check:"", time:""}; }
-function blankTutor(){ return {step:0, type:"", focus:[], role:"", task:"", purpose:"", audience:"", issue:"", local:"", draft:"", self:[], bigIdea:"", understanding:"", essential:"", evidence:{}, prepost:"", rubric:""}; }
+function blankTutor(){ return {step:0, topic:"", seed:0, picked:"", why:"", type:"", focus:[], role:"", task:"", purpose:"", audience:"", issue:"", local:"", draft:"", self:[], bigIdea:"", understanding:"", essential:"", evidence:{}, prepost:"", rubric:""}; }
 function blankPlan(){
   return {
     meta:{title:"", grade:"", subject:"", author:"", overview:""},
@@ -531,15 +542,35 @@ const RENDER = {
 };
 
 /* ---------- driving question tutor ---------- */
-const TSTEPS = ["Begin with the end", "Choose a DQ type", "Plan the end product", "Draft and test", "How will you know?"];
-const PRODUCT_HINTS = [
-  {re:/\b(write|writing|composition|narrative|informative|essay|opinion piece)/i, what:"write", ideas:"a story, letter, article, or picture book"},
-  {re:/\b(present|presentation|oral|speak|recite|perform)/i, what:"present or perform", ideas:"a presentation, performance, or museum exhibit"},
-  {re:/\b(map|maps|globe|globes)\b/i, what:"use or make maps", ideas:"a map, atlas, or tour guide"},
-  {re:/\b(design|build|construct|engineer|model|solution|prototype)/i, what:"design, build, or solve", ideas:"a model, invention, or design proposal"},
-  {re:/\b(argument|claim|evidence|debate|persuade|opinion)/i, what:"argue with evidence", ideas:"a debate, persuasive letter, or proposal"},
-  {re:/\b(data|graph|chart|measure|measurement|survey)/i, what:"collect or show data", ideas:"a survey report, chart display, or field guide"},
-  {re:/\b(community|government|citizen|civic|history|historical|leader)/i, what:"study communities or history", ideas:"a community event, action plan, or class museum"}
+const TSTEPS = ["Begin with the end", "Suggested questions", "Make it yours", "Subquestions", "How will you know?"];
+const CATS = [
+  {k:"write", re:/\b(write|writing|composition|narrative|informative|essay)/i, what:"write",
+    products:["picture book","guidebook","newspaper article","class magazine"], roles:["authors","news reporters"],
+    subs:t=>[`What makes a piece of writing about ${t} clear and interesting to read?`]},
+  {k:"present", re:/\b(present|presentation|oral|speak|recite|perform)/i, what:"present",
+    products:["museum exhibit","video","presentation"], roles:["museum guides","TV reporters"],
+    subs:t=>[`How can we present what we learn about ${t} so our audience understands it?`]},
+  {k:"map", re:/\b(map|maps|globe|globes|direction)/i, what:"use maps",
+    products:["map","tour guide map"], roles:["mapmakers","tour guides"],
+    subs:t=>[`What should a map show, and how does a map key help people read it?`]},
+  {k:"design", re:/\b(design|designs|build|builds|engineer|engineers|model|models|prototype|solutions?)\b/i, what:"design or solve",
+    products:["model","design plan","invention"], roles:["engineers","designers"],
+    subs:(t,V)=>[`What problems ${V.does} ${t} cause, and how could we design a solution?`]},
+  {k:"argue", re:/\b(argument|claim|evidence|debate|persuade|opinion)/i, what:"argue with evidence",
+    products:["proposal","persuasive letter"], roles:["advisors","council members"],
+    subs:t=>[`What evidence can we use to support our claim about ${t}?`]},
+  {k:"data", re:/\b(data|graph|chart|measure|measurement|survey|collect)/i, what:"collect or show data",
+    products:["field guide","survey report","chart display"], roles:["scientists","researchers"],
+    subs:t=>[`What data can we collect about ${t}, and how can we show it?`]},
+  {k:"science", re:/\b(organism|plant|animal|habitat|energy|force|motion|weather|climate|earth|matter|environment|ecosystem|life cycle|survive)/i, what:"investigate science",
+    products:["field guide","model"], roles:["scientists","park rangers"],
+    subs:(t,V)=>[`What do scientists already know about ${t}?`, `How ${V.does} ${t} affect living things?`, `What patterns do we notice when we observe ${t}?`]},
+  {k:"social", re:/\b(community|government|citizen|civic|history|historical|leader|culture|economic|region|indiana)/i, what:"study communities",
+    products:["community event","action plan","class museum"], roles:["city planners","community leaders","historians"],
+    subs:(t,V)=>[`Who in our community is connected to ${t}?`, `How ${V.has} ${t} changed over time where we live?`]},
+  {k:"math", re:/\b(number|fraction|add|subtract|multiply|divide|area|perimeter|shape|geometry|equation|money|time)\b/i, what:"use math",
+    products:["chart display","budget plan"], roles:["planners","designers"],
+    subs:t=>[`How can counting or measuring help us understand ${t}?`]}
 ];
 const STOP = new Set("about after again also because before being between both could does doing during each from have having into more most other should their there these they this those through under until very what when where which while will with would your students student grade level using examples include including understand".split(" "));
 
@@ -548,20 +579,78 @@ function tnav(back, next, nextLabel){
   return `<div class="tnav">${back!=null?`<button class="btn" data-act="tstep" data-step="${back}">Back</button>`:"<span></span>"}${next!=null?`<button class="btn primary" data-act="tstep" data-step="${next}">${nextLabel||"Next"}</button>`:"<span></span>"}</div>`;
 }
 function tfield(label, key, o={}){ return field(label, "dqTutor."+key, o); }
-function focusStds(){ return plan.standards.filter(s=>filled(s.code) && plan.dqTutor.focus.includes(s.id)); }
+function focusStds(){ return plan.standards.filter(s=>filled(s.code)); }
+function cap(s){ return s.charAt(0).toUpperCase()+s.slice(1); }
+function verbs(topic){
+  const last = (topic.trim().split(/\s+/).pop()||"").toLowerCase();
+  const pl = /[a-z]s$/.test(last) && !/(ss|us|is|ics)$/.test(last);
+  return pl ? {does:"do", is:"are", has:"have", matters:"matter"} : {does:"does", is:"is", has:"has", matters:"matters"};
+}
+function art(w){ return /^[aeiou]/i.test(w) ? "an "+w : "a "+w; }
+function rng(seed){ let a = seed>>>0; return ()=>{ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+function pick(r, arr){ return arr[Math.floor(r()*arr.length)]; }
 
-function templateDq(){
-  const t = plan.dqTutor, b = s => filled(s) ? s.trim().replace(/[?.!]+$/,"") : "___";
-  if(t.type==="debate") return filled(t.issue) ? (/\?$/.test(t.issue.trim())?t.issue.trim():t.issue.trim()+"?") : "Should ___?";
-  if(t.type==="role") return `How can we, as ${b(t.role)}, ${b(t.task)} ${b(t.purpose)}${filled(t.audience)?" for "+t.audience.trim():""}?`;
-  return `How can we ${b(t.task)}${filled(t.audience)?" for "+t.audience.trim():""}?`;
+function detectCats(){
+  const stds = plan.standards.filter(s=>filled(s.code));
+  const found = CATS.map(c=>({c, codes:stds.filter(s=>c.re.test(s.text)).map(s=>s.code.trim())})).filter(x=>x.codes.length);
+  return found.length ? found : [{c:CATS[0], codes:[]}, {c:CATS[1], codes:[]}];
 }
-function stems(){
+function audiences(){
+  const g = (plan.meta.grade||"").toLowerCase();
+  const young = /\b(k|kindergarten|1|2|first|second)\b/.test(g);
+  return young ? ["our families","our principal","the class next door"] : ["our families","younger students","our principal","visitors to our school"];
+}
+function suggestions(){
   const t = plan.dqTutor;
-  if(t.type==="debate") return ["Should ___?", "Does it matter ___?", "Is it fair that ___?", "What would happen if ___?", "Do ___ really ___?"];
-  if(t.type==="role") return ["How can we, as ___, ___ for ___?", "How do we, as ___, convince ___ to ___?", "How can we, as ___, help ___ decide ___?"];
-  return ["How can we create ___ for ___?", "How can we make ___?", "How can we plan ___?", "How can we help ___ ___?"];
+  const topic = filled(t.topic) ? t.topic.trim() : "___";
+  const local = filled(t.local) ? t.local.trim() : "our community";
+  const V = verbs(topic);
+  const r = rng(1000 + (t.seed||0)*7919);
+  const found = detectCats();
+  const prodPool = found.flatMap(x=>x.c.products.map(p=>({p, codes:x.codes, what:x.c.what})));
+  const rolePool = found.flatMap(x=>x.c.roles.map(p=>({p, codes:x.codes, products:x.c.products})));
+  const aud = audiences();
+  const out = [];
+  const used = new Set();
+  const add = (type, text, info) => { if(used.has(text)) return; used.add(text); out.push(Object.assign({type, text}, info)); };
+  for(let i=0;i<2;i++){
+    const pr = pick(r, prodPool), a = pick(r, aud);
+    const forms = [
+      `How can we create ${art(pr.p)} about ${topic} for ${a}?`,
+      `How can we make ${art(pr.p)} that helps ${a} understand ${topic}?`,
+      `How can we use what we learn about ${topic} to make ${local} a better place?`
+    ];
+    add("product", forms[(i + (t.seed||0)) % forms.length], {product:pr.p, audience:a, codes:pr.codes, task:`create ${art(pr.p)} about ${topic}`});
+  }
+  for(let i=0;i<2;i++){
+    const ro = pick(r, rolePool), pr = {p:pick(r, ro.products), codes:[]}, a = pick(r, aud);
+    const forms = [
+      `How can we, as ${ro.p}, create ${art(pr.p)} that teaches ${a} about ${topic}?`,
+      `How do we, as ${ro.p}, show ${a} why ${topic} ${V.matters} in ${local}?`
+    ];
+    add("role", forms[(i + (t.seed||0)) % forms.length], {role:ro.p, product:pr.p, audience:a, codes:[...new Set([...ro.codes, ...pr.codes])], task:`create ${art(pr.p)} about ${topic}`});
+  }
+  const deb = [
+    `${cap(V.does)} ${topic} matter to people in ${local}?`,
+    `What would ${local} be like without ${topic}?`,
+    `Should everyone in ${local} learn about ${topic}?`,
+    `${cap(V.is)} ${topic} more helpful or more harmful to ${local}?`
+  ];
+  const s0 = (t.seed||0) % deb.length;
+  add("debate", deb[s0], {codes:[], task:"share and defend their answer"});
+  add("debate", deb[(s0+1)%deb.length], {codes:[], task:"share and defend their answer"});
+  return out;
 }
+function subSuggestions(){
+  const t = plan.dqTutor;
+  const topic = filled(t.topic) ? t.topic.trim() : "___";
+  const found = detectCats();
+  const out = [{q:`What do we already know about ${topic}, and what do we need to find out?`, codes:[]}];
+  const V = verbs(topic);
+  found.forEach(x=>x.c.subs(topic, V).forEach(q=>out.push({q, codes:x.codes})));
+  return out;
+}
+
 function dqChecks(q){
   const out = [];
   const s = (q||"").trim();
@@ -577,6 +666,7 @@ function dqChecks(q){
   if(hits.length>=2) out.push(["warn",`It repeats standards vocabulary (${hits.slice(0,4).join(", ")}). You do not need to state the content in the question. Students will need it anyway to answer.`]);
   const long = words(s).filter(x=>x.length>=12);
   if(long.length) out.push(["warn",`Will your students understand "${long[0]}"? Use their words when you can.`]);
+  if(filled(plan.dqTutor.picked) && s===plan.dqTutor.picked.trim()) out.push(["warn","This is exactly the suggestion you picked. Make it yours: change words, add your school or town, or sharpen the task."]);
   if(!out.length) out.push(["ok","No problems found by the automatic check. Now use the four questions below."]);
   return out;
 }
@@ -587,6 +677,12 @@ function tutor(){
   return `<div class="tutor">${dots}<div class="tbody">${TUTOR[step]()}</div></div>`;
 }
 
+const TYPE_INFO = {
+  product:["Create, do, or solve","Names a product to create, a task to do, or a problem to solve."],
+  role:["Create with a role","Students play a real-world role in a scenario."],
+  debate:["Debate or big idea","A debatable issue or intriguing question. Students defend their answer with evidence."]
+};
+
 const TUTOR = [
   function(){
     const stds = plan.standards.filter(s=>filled(s.code));
@@ -594,66 +690,37 @@ const TUTOR = [
     if(!filled(plan.meta.title)) miss.push(["overview","a unit topic or title"]);
     if(!filled(plan.meta.overview)) miss.push(["overview","a unit overview"]);
     if(!stds.length) miss.push(["standards","your standards"]);
-    const ready = !miss.length;
     const summary = `<div class="tsum"><div><b>Topic</b>${filled(plan.meta.title)?esc(plan.meta.title):"<i>not set</i>"}${filled(plan.meta.grade)?" ("+esc(plan.meta.grade)+")":""}</div><div><b>Standards</b>${stds.length?stds.map(s=>esc(s.code)).join(", "):"<i>none yet</i>"}</div><div><b>Overview</b>${filled(plan.meta.overview)?esc(plan.meta.overview.slice(0,220))+(plan.meta.overview.length>220?"...":""):"<i>not written</i>"}</div></div>`;
     return `<h3 class="th">Begin with the end in mind</h3>`
-      + bubble(`A driving question organizes every activity in your unit by stating its purpose. Before writing one, picture the last day of the unit: what will your students have made or done, and what will it show they learned? We will work backward from there.`)
+      + bubble(`A driving question organizes every activity in your unit by stating its purpose. I will suggest some driving questions built from your standards. First, tell me two things.`)
       + summary
-      + (ready ? bubble(`You have a topic, ${stds.length} standard${stds.length>1?"s":""}, and an overview. That is everything we need. Ready?`)
-               : bubble(`Before we start, you still need ${miss.map(m=>`<button class="btn link" data-act="nav" data-sec="${m[0]}">${m[1]}</button>`).join(" and ")}. The driving question grows out of those. You can also continue now and come back.`))
-      + tnav(null, 1, ready?"Let's start":"Continue anyway");
+      + (miss.length ? bubble(`You still need ${miss.map(m=>`<button class="btn link" data-act="nav" data-sec="${m[0]}">${m[1]}</button>`).join(" and ")}. My suggestions are better when those are done.`) : "")
+      + tfield("Your topic in a few words", "topic", {req:true, hint:"Write it the way you would say it to students, so it fits into a question. Example: natural disasters, plant life cycles, our town's history.", ph:"e.g., natural disasters"})
+      + tfield("A place your students know", "local", {hint:"Optional. Your school, town, or county makes the question feel real.", ph:"e.g., Longfellow Elementary, Muncie"})
+      + tnav(null, 1, "Show me suggestions");
   },
   function(){
     const t = plan.dqTutor;
-    const stds = plan.standards.filter(s=>filled(s.code));
-    const found = PRODUCT_HINTS.map(h=>({h, codes:stds.filter(s=>h.re.test(s.text)).map(s=>s.code)})).filter(x=>x.codes.length);
-    const hint = found.length
-      ? `Reading your standards, I notice they ask students to ${found.map(x=>`<b>${x.h.what}</b> (${esc(x.codes.join(", "))})`).join("; ")}. A project could combine these. For example: ${esc(found.slice(0,3).map(x=>x.h.ideas).join("; or "))}.`
-      : `Look at the verbs in your standards. Do they ask students to make, write, present, solve, or argue something? Those verbs point to a possible end product.`;
-    const opt = (v,title,desc,ex) => `<label class="topt ${t.type===v?"on":""}"><input type="radio" name="dqtype" data-path="dqTutor.type" value="${v}" ${t.type===v?"checked":""}><span><b>${title}</b><span>${desc}</span><i>${ex}</i></span></label>`;
-    let react = "";
-    if(t.type==="product") react = bubble("Good choice. Your question will name something students create, a task they do, or a problem they solve.");
-    if(t.type==="role") react = bubble("A role makes the project feel real. Students take on a job from the real world and do the work that person would do.");
-    if(t.type==="debate") react = bubble("Debatable questions work well when students must use evidence from the unit to defend their answer. Make sure there is a final product where they share their position.");
-    return `<h3 class="th">Based on the standards, do you want to do a project?</h3>`
-      + bubble(hint)
-      + `<p class="tq">What kind of driving question fits your unit?</p><div class="topts" role="radiogroup" aria-label="Driving question type">`
-      + opt("product","Create, do, or solve","Names a product to create, a task to do, or a problem to solve.","How can we make a farm in our classroom?")
-      + opt("role","Create with a role","Same as above, but students play a real-world role in a scenario.","How do we, as road builders, show our boss where a new road should go so it does not harm animal habitats?")
-      + opt("debate","Debate or big idea","Focuses on a debatable issue, a philosophical question, or an intriguing topic.","Does it matter how much sleep we get?")
-      + `</div>` + react
-      + tnav(0, t.type?2:null);
+    const list = suggestions();
+    const found = detectCats();
+    const verbs = found.filter(x=>x.codes.length).map(x=>`<b>${x.c.what}</b> (${esc(x.codes.join(", "))})`);
+    const groups = ["product","role","debate"].map(ty=>{
+      const items = list.filter(x=>x.type===ty);
+      return `<div class="sgroup"><h4>${TYPE_INFO[ty][0]}</h4><p class="sub">${TYPE_INFO[ty][1]}</p>${items.map(x=>{
+        const on = t.picked===x.text;
+        return `<div class="scard ${on?"on":""}"><p>${esc(x.text)}</p>${x.codes.length?`<span class="scodes">End product uses: ${esc(x.codes.join(", "))}</span>`:""}<button class="btn small ${on?"primary":""}" data-act="tpick" data-v="${esc(JSON.stringify(x))}">${on?"Picked":"Pick this one"}</button></div>`;
+      }).join("")}</div>`;
+    }).join("");
+    return `<h3 class="th">Suggested driving questions</h3>`
+      + bubble((verbs.length ? `Your standards ask students to ${verbs.join("; ")}. ` : "") + `Here are some starting points in the three kinds of driving questions. They are rough drafts, not final answers. Pick the one closest to the unit you imagine, and you will make it yours in the next step.`)
+      + (!filled(t.topic) ? bubble(`Tip: go back and add your topic so the blanks fill in.`) : "")
+      + groups
+      + `<div class="tbtnrow"><button class="btn" data-act="tshuffle">Show different suggestions</button></div>`
+      + tfield("Why did you pick this one?", "why", {req:true, multi:true, rows:2, hint:"How does it fit your standards and your students?"})
+      + tnav(0, 2, "Make it mine");
   },
   function(){
     const t = plan.dqTutor;
-    const stds = plan.standards.filter(s=>filled(s.code));
-    const n = focusStds().length, total = stds.length;
-    const pct = total ? Math.round(n/total*100) : 0;
-    let meter = "";
-    if(total){
-      meter = n===0 ? bubble("Check the standards your end product will cover. Aim for most of them.")
-        : n/total>=0.5 ? bubble(`Your end product covers ${n} of ${total} standards. That meets the majority of your expectations.`)
-        : bubble(`Your end product covers ${n} of ${total} standards. Can you stretch it to cover more? For example, adding a written or spoken part often brings in ELA standards.`);
-    }
-    const checks = total ? `<div class="checks tcheck">${stds.map(s=>`<label title="${esc(s.text)}"><input type="checkbox" data-link="dqTutor.focus" value="${s.id}" ${t.focus.includes(s.id)?"checked":""}>${esc(s.code)}</label>`).join("")}</div><div class="tmeter" aria-hidden="true"><span style="width:${pct}%"></span></div>` : `<span class="empty-note">Add standards first.</span>`;
-    let fields = "";
-    if(t.type==="debate"){
-      fields = tfield("What is the issue or big idea students will take a position on?", "issue", {multi:true, rows:2, ph:"e.g., Should our school build a garden instead of a new parking lot?"})
-        + tfield("How will students share their answer at the end?", "task", {ph:"e.g., a class debate for families, a persuasive letter to the principal"});
-    } else {
-      if(t.type==="role") fields += tfield("Who in the real world does this work?", "role", {hint:"This is the role your students will play.", ph:"e.g., park rangers, newspaper reporters, city planners"});
-      fields += tfield(t.type==="role"?"What product will they create or what action will they take?":"What will students create, do, or solve?", "task", {hint:"Start with a verb.", ph:"e.g., create a field guide to the trees at our school"});
-      fields += tfield("What is the purpose?", "purpose", {hint:"To persuade, inform, propose a solution, celebrate, teach...", ph:"e.g., to show which trees need protecting"});
-      fields += tfield("Who is the audience?", "audience", {ph:"e.g., our principal, first graders, families at open house"});
-    }
-    fields += tfield("Localize it: where does this connect to your students' own lives or community?", "local", {multi:true, rows:2, hint:"Students engage more when the project is about their own school, town, or county, and when it gives them a real job to do.", ph:"e.g., the creek behind Longfellow, our school drop-off line, Muncie parks"});
-    return `<h3 class="th">What would be an interesting way to meet the majority of the expectations?</h3>`
-      + `<p class="tq">Which standards will the end product show?</p>` + checks + meter + fields
-      + tnav(1, 3);
-  },
-  function(){
-    const t = plan.dqTutor;
-    const tmpl = templateDq();
     const res = dqChecks(t.draft);
     const self = [
       ["understand","Will my students understand it? Will they find it interesting?"],
@@ -662,10 +729,9 @@ const TUTOR = [
       ["noContent","Did I avoid stating the content in the question itself?"]
     ];
     const allSelf = self.every(([k])=>t.self.includes(k));
-    return `<h3 class="th">Create a driving question for your unit</h3>`
-      + (t.type!=="debate" ? bubble(`Here is your plan plugged into the template:<div class="tmpl">${esc(tmpl)}</div>Edit it until it sounds like something you would say to your students.`) : bubble(`Start from your issue and shape it into a question students can argue about.`))
-      + `<div class="tstems"><span class="tq">Start from:</span><button class="btn small" data-act="tstem" data-v="${esc(tmpl)}">My template</button>${stems().map(s=>`<button class="btn small" data-act="tstem" data-v="${esc(s)}">${esc(s)}</button>`).join("")}</div>`
-      + tfield("Your draft", "draft", {multi:true, rows:2})
+    return `<h3 class="th">Make it yours</h3>`
+      + bubble(`Edit the question until it sounds like something you would say to your students. Try to <b>localize</b> it (your school or town) and <b>charge</b> it (give students a real job to do).`)
+      + tfield("Your driving question draft", "draft", {multi:true, rows:2})
       + `<div class="tbtnrow"><button class="btn" data-act="tcheck">Check my question</button></div>`
       + (filled(t.draft) ? `<ul class="tres">${res.map(([l,m])=>`<li class="${l}">${esc(m)}</li>`).join("")}</ul>` : "")
       + `<p class="tq">Ask yourself:</p><div class="tself">${self.map(([k,q])=>`<label><input type="checkbox" data-link="dqTutor.self" value="${k}" ${t.self.includes(k)?"checked":""}><span>${q}</span></label>`).join("")}</div>`
@@ -680,19 +746,33 @@ const TUTOR = [
       + tfield("Enduring understanding", "understanding", {multi:true, rows:2, ph:"What should students still understand years from now?"})
       + tfield("Essential question", "essential", {ph:"A broad question, e.g., How does a place change?"})
       + `<p class="note">These are added to your exported plan when filled in.</p></div></details>`
-      + (allSelf && filled(t.draft) && !res.some(r=>r[0]==="err") ? bubble("You answered yes to all four questions. Use it as your driving question, then plan how you will know students are learning.") : "")
-      + `<div class="tnav"><button class="btn" data-act="tstep" data-step="2">Back</button><span class="tright"><button class="btn" data-act="tuse">Use as my driving question</button><button class="btn primary" data-act="tstep" data-step="4">Next</button></span></div>`;
+      + (allSelf && filled(t.draft) && !res.some(r=>r[0]==="err") ? bubble("You answered yes to all four questions. Save it as your driving question, then pick subquestions.") : "")
+      + `<div class="tnav"><button class="btn" data-act="tstep" data-step="1">Back</button><span class="tright"><button class="btn" data-act="tuse">Use as my driving question</button><button class="btn primary" data-act="tstep" data-step="3">Next</button></span></div>`;
+  },
+  function(){
+    const subs = subSuggestions();
+    const have = new Set(plan.dq.subs.filter(filled).map(s=>s.trim()));
+    const n = plan.dq.subs.filter(filled).length;
+    return `<h3 class="th">What will students need to learn to answer it?</h3>`
+      + bubble(`Subquestions break the driving question into things students learn along the way. Each one should match a lesson. Add the ones that fit, then edit them in the list below the tutor.`)
+      + `<div class="sublist">${subs.map(x=>{
+          const added = have.has(x.q);
+          return `<div class="scard ${added?"on":""}"><p>${esc(x.q)}</p>${x.codes.length?`<span class="scodes">Supports: ${esc(x.codes.join(", "))}</span>`:""}<button class="btn small" data-act="taddsub" data-v="${esc(x.q)}" ${added?"disabled":""}>${added?"Added":"Add"}</button></div>`;
+        }).join("")}</div>`
+      + bubble(n ? `You have ${n} subquestion${n>1?"s":""}. Most units need 5 or more. Write your own too: what would a student need to know first, next, and last?` : `Add at least one, then write a few of your own.`)
+      + `<div class="tbtnrow"><button class="btn" data-act="tgo" data-target="dqFinal">Go to my subquestion list</button></div>`
+      + tnav(2, 4);
   },
   function(){
     const t = plan.dqTutor;
     const fs = focusStds();
     const rows = fs.length ? fs.map(s=>`<div class="field"><label for="ev_${s.id}">${esc(s.code)}<span class="hint" style="display:block;font-weight:400">${esc(s.text.slice(0,160))}${s.text.length>160?"...":""}</span></label><input type="text" id="ev_${s.id}" data-path="dqTutor.evidence.${s.id}" value="${esc(t.evidence[s.id]||"")}" placeholder="What in the end product will show this?"></div>`).join("")
-      : `<p class="empty-note">Go back to step 3 and check the standards your end product covers.</p>`;
+      : `<p class="empty-note">Add standards first.</p>`;
     const empty = fs.filter(s=>!filled(t.evidence[s.id])).length;
     return `<h3 class="th">How will you know they are learning?</h3>`
-      + bubble(`Your driving question is set. Now decide how you will see learning happen: a pre and post assessment, and a rubric for the end product. A good rubric has one row for each standard the product covers.`)
+      + bubble(`Decide how you will see learning happen: a pre and post assessment, and a rubric for the end product. A good rubric has one row for each standard the product covers.`)
       + `<p class="tq">For each standard, what in the end product will show it? These become your rubric rows.</p>` + rows
-      + (fs.length && empty ? bubble(`${empty} standard${empty>1?"s still need":" still needs"} evidence. If you cannot name any, the end product may not really cover that standard.`) : "")
+      + (fs.length && empty ? bubble(`${empty} standard${empty>1?"s still need":" still needs"} evidence. If you cannot name any, the end product may not really cover that standard. That is fine if another lesson or assessment covers it.`) : "")
       + tfield("Pre/post assessment: how will you find out what students know before and after?", "prepost", {multi:true, rows:2, ph:"e.g., the same short survey on day 1 and the last day"})
       + `<div class="tbtnrow"><button class="btn" data-act="tsumm">Add end product to my summative assessments</button><button class="btn" data-act="tpre">Use as my pre-assessment</button></div>`
       + tnav(3, null)
@@ -882,7 +962,24 @@ document.addEventListener("click", e=>{
     rememberOpen(); save(); renderSteps(); renderMain();
     return;
   }
-  if(act==="tstep"){ plan.dqTutor.step = +b.dataset.step; save(); renderMain(); const w=document.querySelector(".tutor-wrap"); if(w) w.scrollIntoView({block:"start"}); return; }
+  if(act==="tstep"){
+    const to = +b.dataset.step, from = plan.dqTutor.step||0;
+    if(from<=1 && to>=2 && !filled(plan.dqTutor.draft)){ plan.dqTutor.step = 1; save(); renderMain(); return toast("Pick a suggested question first, or type your own in step 3."); }
+    if(from===1 && to>=2 && !filled(plan.dqTutor.why)) return toast("Tell me why you picked this one first.");
+    plan.dqTutor.step = to; save(); renderMain(); const w=document.querySelector(".tutor-wrap"); if(w) w.scrollIntoView({block:"start"}); return; }
+  if(act==="tpick"){
+    const x = JSON.parse(b.dataset.v), t = plan.dqTutor;
+    if(filled(t.draft) && t.draft.trim()!==t.picked.trim() && !confirm("Replace your edited draft with this suggestion?")) return;
+    t.picked = x.text; t.draft = x.text; t.type = x.type; t.role = x.role||""; t.task = x.task||""; t.audience = x.audience||""; t.purpose = "";
+    save(); renderMain(); const f=document.getElementById("f_dqTutor_why"); if(f) f.focus(); return;
+  }
+  if(act==="tshuffle"){ plan.dqTutor.seed = (plan.dqTutor.seed||0)+1; save(); renderMain(); return; }
+  if(act==="taddsub"){
+    const q = b.dataset.v, subs = plan.dq.subs; const i = subs.findIndex(s=>!filled(s));
+    if(i>=0) subs[i] = q; else subs.push(q);
+    save(); renderSteps(); renderMain(); return;
+  }
+  if(act==="tgo"){ const el=document.getElementById(b.dataset.target); if(el) el.scrollIntoView({block:"start"}); return; }
   if(act==="tstem"){ plan.dqTutor.draft = b.dataset.v; save(); renderMain(); const d=document.getElementById("f_dqTutor_draft"); if(d){ d.focus(); const k=d.value.indexOf("___"); if(k>=0) d.setSelectionRange(k,k+3); } return; }
   if(act==="tcheck"){ renderMain(); const r=document.querySelector(".tres"); if(r) r.scrollIntoView({block:"nearest"}); return; }
   if(act==="tuse"){
