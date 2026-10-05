@@ -289,8 +289,6 @@ img.tavatar{background:var(--soft);object-fit:contain;padding:2px}
     <ol class="steps" id="steps"></ol>
     <div class="side-foot">
       <button class="btn link" data-act="loadSample">Load sample unit</button>
-      <button class="btn link" data-act="importJson">Open saved file (.json)</button>
-      <button class="btn link" data-act="exportJson">Save backup file (.json)</button>
       <button class="btn link" data-act="reset">Start a new plan</button>
     </div>
   </nav>
@@ -357,7 +355,7 @@ function save(){
   document.getElementById("saveState").textContent = "Saving...";
   saveTimer = setTimeout(() => {
     try{ localStorage.setItem(KEY, JSON.stringify(plan)); document.getElementById("saveState").textContent = "Saved in this browser"; }
-    catch(e){ document.getElementById("saveState").textContent = "Not saved: use Save backup file"; }
+    catch(e){ document.getElementById("saveState").textContent = "Not saved: download your plan to keep a copy"; }
   }, 400);
 }
 
@@ -567,8 +565,7 @@ const RENDER = {
     + `<h2 class="h">Download</h2><div class="exports">
         <button class="btn primary" data-act="exportDocx">Download Word (.docx)</button>
         <button class="btn" data-act="exportPdf">Download PDF</button>
-        <button class="btn" data-act="exportJson">Save backup file (.json)</button>
-      </div><p class="note">You can download at any time, even with missing items. The backup file lets you continue on another computer with "Open saved file".</p>`
+      </div><p class="note">You can download at any time, even with missing items. Your plan is saved in this browser, so use the same computer and browser to keep working on it.</p>`
     + `<h2 class="h">Standards coverage</h2><p class="note">Which lessons teach each standard. Rows in red are not taught in any lesson.</p>${matrix("standards")}`
     + `<h2 class="h">Objectives coverage</h2><p class="note">Which lessons teach each objective.</p>${matrix("objectives")}`;
   }
@@ -1065,7 +1062,7 @@ document.addEventListener("click", e=>{
   if(act==="exportJson") return saveFile(fileBase()+".json", JSON.stringify(plan, null, 2));
   if(act==="importJson") return document.getElementById("fileIn").click();
   if(act==="reset"){
-    if(!confirm("Start a new plan? Your current plan will be cleared from this browser. Save a backup file first if you want to keep it.")) return;
+    if(!confirm("Start a new plan? Your current plan will be cleared from this browser. Download it first if you want to keep a copy.")) return;
     plan = blankPlan(); openLessons.clear(); current="overview"; save(); renderAll(true); toast("Started a new plan");
     return;
   }
