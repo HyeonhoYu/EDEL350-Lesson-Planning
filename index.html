@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="A guided unit plan builder for preservice teachers. Fill in each part of the unit plan template and download it as Word or PDF.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Unit Plan Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#F4F6F8; --sheet:#FFFFFF; --ink:#1D2A36; --muted:#5C6B78; --line:#D5DCE3;
+  --pencil:#F2B33D; --pencil-ink:#5E4100; --navy:#24476B; --navy-ink:#FFFFFF;
+  --sage:#3F7D5C; --brick:#B2453A; --soft:#EAF0F5;
+  --serif:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --sans:"Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#12181E; --sheet:#1A222A; --ink:#E6ECF1; --muted:#9AA8B4; --line:#2E3A46;
+    --navy:#8DB4DC; --navy-ink:#0F1A24; --sage:#7BC29C; --brick:#E58A7F; --soft:#222D37;
+    --pencil-ink:#3A2800;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#12181E; --sheet:#1A222A; --ink:#E6ECF1; --muted:#9AA8B4; --line:#2E3A46;
+  --navy:#8DB4DC; --navy-ink:#0F1A24; --sage:#7BC29C; --brick:#E58A7F; --soft:#222D37;
+  --pencil-ink:#3A2800;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--pencil);outline-offset:2px}
+
+/* header */
+.top{position:sticky;top:0;z-index:20;background:var(--sheet);border-bottom:1px solid var(--line);
+  padding-top:env(safe-area-inset-top,0px)}
+.top-inner{display:flex;align-items:center;gap:16px;padding:12px 24px;flex-wrap:wrap}
+.brand{font-family:var(--serif);font-weight:700;font-size:1.05rem;color:var(--muted);white-space:nowrap}
+.unit-name{font-family:var(--serif);font-weight:700;font-size:1.3rem;flex:1;min-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.unit-name.empty{color:var(--muted);font-weight:600}
+.save-state{font-size:.85rem;color:var(--muted);white-space:nowrap}
+.top-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{border:1px solid var(--line);background:var(--sheet);border-radius:6px;padding:7px 14px;cursor:pointer;font-weight:700;font-size:.92rem}
+.btn:hover{background:var(--soft)}
+.btn.primary{background:var(--navy);color:var(--navy-ink);border-color:var(--navy)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:4px 10px;font-size:.85rem;font-weight:700}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--brick);background:transparent}
+.btn.link{border:none;background:none;color:var(--navy);padding:0;text-decoration:underline;cursor:pointer;font-weight:700}
+
+/* layout */
+.wrap{display:grid;grid-template-columns:264px minmax(0,1fr);max-width:1180px;margin:0 auto;gap:0}
+.side{padding:28px 0 28px 20px;position:sticky;top:64px;align-self:start;max-height:calc(100vh - 64px);overflow:auto}
+.side h2{font-family:var(--serif);font-size:.95rem;color:var(--muted);margin:0 0 10px 12px;font-weight:600}
+.steps{list-style:none;margin:0;padding:0}
+.step{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:none;background:none;cursor:pointer;
+  padding:10px 14px 10px 12px;border-radius:8px 0 0 8px;position:relative}
+.step:hover{background:var(--soft)}
+.step .num{flex:0 0 28px;height:28px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center;font-size:.82rem;font-weight:700;color:var(--muted);background:var(--sheet)}
+.step .lbl{flex:1;font-weight:700;font-size:.95rem}
+.step .st{font-size:.75rem;color:var(--muted)}
+.step[data-status="done"] .num{background:var(--sage);border-color:var(--sage);color:var(--sheet)}
+.step[data-status="partial"] .num{border-color:var(--pencil)}
+.step[aria-current="step"]{background:var(--pencil);color:var(--pencil-ink)}
+.step[aria-current="step"] .st{color:var(--pencil-ink)}
+.step[aria-current="step"]::after{content:"";position:absolute;right:-20px;top:0;bottom:0;width:20px;background:var(--pencil)}
+.side-foot{margin:22px 0 0 12px;display:flex;flex-direction:column;gap:6px;align-items:flex-start;font-size:.88rem}
+
+.main{background:var(--sheet);border-left:6px solid var(--pencil);min-height:calc(100vh - 64px);padding:36px 48px 80px}
+.main > .inner{max-width:760px}
+.sec-head h1{font-family:var(--serif);font-size:2rem;line-height:1.15;margin:0 0 8px}
+.sec-head p.lead{color:var(--muted);margin:0 0 22px;max-width:62ch}
+
+.guide{border:1px solid var(--line);border-radius:8px;margin:0 0 28px;background:var(--soft)}
+.guide summary{cursor:pointer;padding:10px 14px;font-weight:700;font-size:.92rem;list-style:none}
+.guide summary::-webkit-details-marker{display:none}
+.guide summary::before{content:"+";display:inline-block;width:18px;font-weight:700}
+.guide[open] summary::before{content:"\2212"}
+.guide .g-body{padding:0 16px 14px 32px;font-size:.93rem}
+.guide .g-body ul{margin:6px 0;padding-left:18px}
+.guide .example{border-left:3px solid var(--navy);padding:6px 12px;margin:10px 0 0;background:var(--sheet);border-radius:0 6px 6px 0}
+.guide .example b{display:block;font-size:.8rem;color:var(--muted);margin-bottom:2px}
+
+.field{margin:0 0 20px}
+.field label,.field .flabel{display:block;font-weight:700;margin-bottom:5px}
+.field .req{color:var(--brick);font-weight:700;margin-left:4px}
+.field .hint{display:block;color:var(--muted);font-size:.86rem;margin:-2px 0 6px}
+input[type=text],input[type=url],textarea,select{width:100%;border:1px solid var(--line);border-radius:6px;padding:9px 11px;background:var(--sheet);line-height:1.45}
+textarea{resize:vertical;min-height:74px}
+input:focus,textarea:focus,select:focus{border-color:var(--navy);outline:none;box-shadow:0 0 0 3px color-mix(in srgb,var(--navy) 22%,transparent)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+
+.list{display:flex;flex-direction:column;gap:8px;margin:0 0 10px}
+.li{display:flex;gap:8px;align-items:flex-start}
+.li .idx{flex:0 0 30px;padding-top:9px;color:var(--muted);font-weight:700;font-size:.9rem;text-align:right}
+.li > .grow{flex:1;display:flex;flex-direction:column;gap:6px}
+.li .ghost{margin-top:5px}
+.std-grid{display:grid;grid-template-columns:130px 1fr;gap:6px}
+
+.block{border:1px solid var(--line);border-radius:8px;padding:16px 18px;margin:0 0 18px}
+.block h3{font-family:var(--serif);font-size:1.15rem;margin:0 0 4px}
+.block > p.sub{margin:0 0 12px;color:var(--muted);font-size:.9rem}
+
+.lesson{border:1px solid var(--line);border-radius:8px;margin:0 0 12px;background:var(--sheet)}
+.lesson > summary{cursor:pointer;padding:12px 16px;display:flex;gap:12px;align-items:center;list-style:none}
+.lesson > summary::-webkit-details-marker{display:none}
+.lesson .lnum{font-family:var(--serif);font-weight:700;font-size:1.05rem;white-space:nowrap}
+.lesson .ltitle{flex:1;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lesson .ltitle.empty{color:var(--muted);font-weight:400;font-style:italic}
+.tag{font-size:.75rem;font-weight:700;padding:2px 8px;border-radius:20px;border:1px solid var(--line);white-space:nowrap}
+.tag.ira{background:var(--navy);color:var(--navy-ink);border-color:var(--navy)}
+.tag.detailed{background:var(--pencil);color:var(--pencil-ink);border-color:var(--pencil)}
+.tag.miss{color:var(--brick);border-color:var(--brick)}
+.lesson[open] > summary{border-bottom:1px solid var(--line)}
+.lesson .lbody{padding:18px 16px 6px}
+.checks{display:flex;flex-wrap:wrap;gap:6px 14px}
+.checks label{display:flex;gap:6px;align-items:center;font-weight:400;font-size:.92rem;cursor:pointer}
+.checks input{width:16px;height:16px;accent-color:var(--navy)}
+.empty-note{color:var(--muted);font-size:.88rem;font-style:italic}
+.type-pick{display:flex;gap:6px;flex-wrap:wrap}
+.type-pick label{border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:700;font-size:.9rem;display:flex;gap:6px;align-items:center}
+.type-pick input{accent-color:var(--navy)}
+.req-summary{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 18px;font-size:.9rem}
+.req-summary span{padding:4px 10px;border-radius:6px;border:1px solid var(--line)}
+.req-summary span.ok{border-color:var(--sage);color:var(--sage);font-weight:700}
+.req-summary span.no{border-color:var(--brick);color:var(--brick);font-weight:700}
+
+/* review */
+.score{display:flex;gap:28px;align-items:baseline;margin:0 0 22px;flex-wrap:wrap}
+.score .big{font-family:var(--serif);font-size:3rem;font-weight:700;line-height:1}
+.score .cap{color:var(--muted);font-size:.92rem}
+.issues{list-style:none;padding:0;margin:0 0 28px;border:1px solid var(--line);border-radius:8px}
+.issues li{display:flex;gap:12px;padding:10px 14px;border-top:1px solid var(--line);align-items:flex-start}
+.issues li:first-child{border-top:none}
+.issues .lvl{flex:0 0 62px;font-size:.75rem;font-weight:700;padding-top:3px}
+.issues .lvl.err{color:var(--brick)}
+.issues .lvl.warn{color:#9A6A00}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .issues .lvl.warn{color:var(--pencil)}}
+.issues .msg{flex:1}
+.issues .where{font-size:.85rem}
+.allclear{padding:14px 16px;border:1px solid var(--sage);color:var(--sage);border-radius:8px;font-weight:700;margin:0 0 28px}
+.matrix-wrap{overflow-x:auto;margin:0 0 28px;border:1px solid var(--line);border-radius:8px}
+table.matrix{border-collapse:collapse;font-size:.85rem;min-width:100%}
+.matrix th,.matrix td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:center;white-space:nowrap}
+.matrix th:first-child,.matrix td:first-child{text-align:left;position:sticky;left:0;background:var(--sheet);max-width:240px;overflow:hidden;text-overflow:ellipsis}
+.matrix thead th{background:var(--soft)}
+.matrix thead th:first-child{background:var(--soft)}
+.matrix td.hit{color:var(--sage);font-weight:700}
+.matrix tr.gap td:first-child{color:var(--brick);font-weight:700}
+.exports{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 10px}
+.note{color:var(--muted);font-size:.88rem}
+h2.h{font-family:var(--serif);font-size:1.3rem;margin:30px 0 10px}
+
+.nav-foot{display:flex;justify-content:space-between;margin-top:36px;padding-top:18px;border-top:1px solid var(--line)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--sheet);padding:10px 18px;border-radius:8px;font-weight:700;font-size:.92rem;opacity:0;pointer-events:none;transition:opacity .2s;z-index:50;max-width:90vw}
+.toast.show{opacity:1}
+
+
+.slinks{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px;margin:0 0 10px}
+.slinks a{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);border-left:4px solid var(--navy);border-radius:6px;color:var(--ink);text-decoration:none;background:var(--sheet)}
+.slinks a:hover{background:var(--soft)}
+.slinks a b{color:var(--navy)}
+.slinks a span{font-size:.84rem;color:var(--muted)}
+
+/* tutor */
+.tutor-wrap{border:2px solid var(--navy);border-radius:10px;margin:0 0 26px;background:var(--sheet)}
+.tutor-wrap > summary{cursor:pointer;padding:12px 16px;font-family:var(--serif);font-weight:700;font-size:1.1rem;list-style:none;background:var(--soft);border-radius:8px}
+.tutor-wrap > summary::-webkit-details-marker{display:none}
+.tutor-wrap[open] > summary{border-bottom:1px solid var(--line);border-radius:8px 8px 0 0}
+.tutor{padding:16px 18px 18px}
+.tsteps{list-style:none;margin:0 0 18px;padding:0;display:flex;gap:6px;flex-wrap:wrap}
+.tdot{border:1px solid var(--line);background:var(--sheet);border-radius:20px;padding:4px 12px 4px 4px;font-size:.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;color:var(--muted)}
+.tdot span{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--soft);color:var(--ink)}
+.tdot.past span{background:var(--sage);color:var(--sheet)}
+.tdot.on{border-color:var(--pencil);background:var(--pencil);color:var(--pencil-ink)}
+.tdot.on span{background:var(--sheet);color:var(--ink)}
+.th{font-family:var(--serif);font-size:1.4rem;line-height:1.25;margin:0 0 14px}
+.tbubble{display:flex;gap:12px;align-items:flex-start;margin:0 0 16px}
+.tbubble > div{background:var(--soft);border-radius:4px 14px 14px 14px;padding:10px 14px;max-width:62ch}
+.tavatar{flex:0 0 34px;height:34px;border-radius:50%;background:var(--navy);color:var(--navy-ink);display:grid;place-items:center;font-family:var(--serif);font-weight:700}
+.tsum{border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:0 0 16px 46px;font-size:.92rem;display:grid;gap:6px}
+.tsum b{display:inline-block;min-width:84px;color:var(--muted)}
+.tq{font-weight:700;margin:6px 0 8px}
+.topts{display:grid;gap:8px;margin:0 0 16px}
+.topt{display:flex;gap:10px;border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer}
+.topt.on{border-color:var(--navy);box-shadow:inset 4px 0 0 var(--navy)}
+.topt input{margin-top:4px;accent-color:var(--navy)}
+.topt > span{display:flex;flex-direction:column;gap:2px}
+.topt i{color:var(--muted);font-size:.9rem}
+.tcheck{margin:0 0 8px}
+.tmeter{height:8px;background:var(--soft);border-radius:4px;overflow:hidden;margin:0 0 14px}
+.tmeter span{display:block;height:100%;background:var(--sage)}
+.tmpl{font-family:var(--serif);font-size:1.12rem;font-weight:600;margin:8px 0;padding:8px 12px;background:var(--sheet);border-left:3px solid var(--pencil)}
+.tstems{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 14px}
+.tstems .tq{margin:0 4px 0 0}
+.tbtnrow{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 14px}
+.tres{list-style:none;padding:0;margin:0 0 16px;display:grid;gap:6px}
+.tres li{padding:8px 12px;border-radius:6px;border:1px solid var(--line);font-size:.93rem}
+.tres li.err{border-color:var(--brick);color:var(--brick)}
+.tres li.warn{border-color:var(--pencil)}
+.tres li.ok{border-color:var(--sage);color:var(--sage);font-weight:700}
+.tself{display:grid;gap:8px;margin:0 0 16px}
+.tself label{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.tself input{margin-top:4px;width:16px;height:16px;accent-color:var(--sage)}
+.tex{margin:0 0 12px}
+.tnav{display:flex;justify-content:space-between;gap:8px;margin-top:10px;flex-wrap:wrap}
+.tright{display:flex;gap:8px;flex-wrap:wrap}
+@media (max-width:860px){.tsum{margin-left:0}.tdot{font-size:0}.tdot span{font-size:.82rem}.tdot{padding:4px}}
+@media (max-width:860px){
+  .wrap{grid-template-columns:1fr}
+  .side{position:sticky;top:0;max-height:none;padding:8px 10px;background:var(--paper);border-bottom:1px solid var(--line);z-index:10;overflow-x:auto}
+  .side h2,.side-foot{display:none}
+  .steps{display:flex;gap:4px}
+  .step{border-radius:8px;padding:8px 10px;white-space:nowrap}
+  .step .st{display:none}
+  .step[aria-current="step"]::after{display:none}
+  .main{border-left:none;border-top:4px solid var(--pencil);padding:24px 18px 60px}
+  .top{position:static}
+  .top-inner{padding:10px 16px}
+  .row2,.std-grid{grid-template-columns:1fr}
+  .sec-head h1{font-size:1.6rem}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+@media print{.top,.side,.nav-foot{display:none}.main{border:none}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <span class="brand">Unit Plan Builder</span>
+    <span class="unit-name empty" id="unitName">Untitled unit</span>
+    <span class="save-state" id="saveState">Not saved yet</span>
+    <div class="top-actions">
+      <button class="btn" data-act="nav" data-sec="review">Check my plan</button>
+      <button class="btn primary" data-act="exportDocx">Download Word</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <nav class="side" aria-label="Plan sections">
+    <h2>Your unit plan</h2>
+    <ol class="steps" id="steps"></ol>
+    <div class="side-foot">
+      <button class="btn link" data-act="loadSample">Load sample unit</button>
+      <button class="btn link" data-act="importJson">Open saved file (.json)</button>
+      <button class="btn link" data-act="exportJson">Save backup file (.json)</button>
+      <button class="btn link" data-act="reset">Start a new plan</button>
+    </div>
+  </nav>
+  <main class="main" id="main"><div class="inner" id="inner"></div></main>
+</div>
+<input type="file" id="fileIn" accept=".json,application/json" hidden>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script>
+(function(){
+"use strict";
+const KEY = "unitPlanBuilder.v1";
+const LESSON_TARGET = 10;
+const uid = () => Math.random().toString(36).slice(2, 9);
+const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const filled = s => typeof s === "string" && s.trim().length > 0;
+
+function blankLesson(){ return {id:uid(), title:"", type:"regular", desc:"", materials:"", standards:[], objectives:[], procedure:"", check:"", time:""}; }
+function blankTutor(){ return {step:0, type:"", focus:[], role:"", task:"", purpose:"", audience:"", issue:"", local:"", draft:"", self:[], bigIdea:"", understanding:"", essential:"", evidence:{}, prepost:"", rubric:""}; }
+function blankPlan(){
+  return {
+    meta:{title:"", grade:"", subject:"", author:"", overview:""},
+    dq:{driving:"", subs:[""]},
+    dqTutor:blankTutor(),
+    standards:[{id:uid(), code:"", text:""}],
+    objectives:[{id:uid(), text:""}],
+    assess:{pre:"", formative:[{id:uid(), title:"", desc:"", link:""}], summative:[{id:uid(), title:"", desc:""}]},
+    lessons:Array.from({length:LESSON_TARGET}, blankLesson),
+    resources:{texts:"", tech:"", other:""},
+    diff:{gifted:"", support:"", other:""},
+    reflect:{worked:"", improve:""}
+  };
+}
+
+let plan = load() || blankPlan();
+let current = "overview";
+const openLessons = new Set();
+
+function load(){
+  try{ const raw = localStorage.getItem(KEY); if(!raw) return null; return normalize(JSON.parse(raw)); }catch(e){ return null; }
+}
+function normalize(p){
+  const b = blankPlan();
+  if(!p || typeof p !== "object") return b;
+  const out = Object.assign(b, p);
+  out.meta = Object.assign(blankPlan().meta, p.meta||{});
+  out.dq = Object.assign({driving:"", subs:[""]}, p.dq||{});
+  out.dqTutor = Object.assign(blankTutor(), p.dqTutor||{});
+  if(!out.dqTutor.evidence || typeof out.dqTutor.evidence!=="object") out.dqTutor.evidence = {};
+  out.assess = Object.assign({pre:"", formative:[], summative:[]}, p.assess||{});
+  out.resources = Object.assign({texts:"",tech:"",other:""}, p.resources||{});
+  out.diff = Object.assign({gifted:"",support:"",other:""}, p.diff||{});
+  out.reflect = Object.assign({worked:"",improve:""}, p.reflect||{});
+  ["standards","objectives","lessons"].forEach(k => { if(!Array.isArray(out[k])) out[k] = b[k]; });
+  out.lessons = out.lessons.map(l => Object.assign(blankLesson(), l));
+  return out;
+}
+let saveTimer = null;
+function save(){
+  clearTimeout(saveTimer);
+  document.getElementById("saveState").textContent = "Saving...";
+  saveTimer = setTimeout(() => {
+    try{ localStorage.setItem(KEY, JSON.stringify(plan)); document.getElementById("saveState").textContent = "Saved in this browser"; }
+    catch(e){ document.getElementById("saveState").textContent = "Not saved: use Save backup file"; }
+  }, 400);
+}
+
+/* path helpers */
+function getP(path){ return path.split(".").reduce((o,k) => o == null ? undefined : o[k], plan); }
+function setP(path, val){
+  const ks = path.split("."); let o = plan;
+  for(let i=0;i<ks.length-1;i++) o = o[ks[i]];
+  o[ks[ks.length-1]] = val;
+}
+
+/* ---------- sections ---------- */
+const SECTIONS = [
+  {id:"overview", label:"Unit basics"},
+  {id:"standards", label:"Standards"},
+  {id:"dq", label:"Driving question"},
+  {id:"objectives", label:"Learning objectives"},
+  {id:"assess", label:"Assessments"},
+  {id:"lessons", label:"Learning activities"},
+  {id:"resources", label:"Resources"},
+  {id:"diff", label:"Differentiation"},
+  {id:"reflect", label:"Reflection"},
+  {id:"review", label:"Review and export"}
+];
+
+function field(label, path, o={}){
+  const v = getP(path) || "";
+  const id = "f_" + path.replace(/\./g,"_");
+  const req = o.req ? '<span class="req" aria-hidden="true">*</span>' : "";
+  const hint = o.hint ? `<span class="hint" id="${id}_h">${esc(o.hint)}</span>` : "";
+  const desc = o.hint ? ` aria-describedby="${id}_h"` : "";
+  const ctl = o.multi
+    ? `<textarea id="${id}" data-path="${path}" rows="${o.rows||3}" placeholder="${esc(o.ph||"")}"${desc}>${esc(v)}</textarea>`
+    : `<input type="text" id="${id}" data-path="${path}" value="${esc(v)}" placeholder="${esc(o.ph||"")}"${desc}>`;
+  return `<div class="field"><label for="${id}">${esc(label)}${req}</label>${hint}${ctl}</div>`;
+}
+function guide(title, tips, example){
+  return `<details class="guide"><summary>${esc(title)}</summary><div class="g-body">
+    <ul>${tips.map(t=>`<li>${t}</li>`).join("")}</ul>
+    ${example ? `<div class="example"><b>Example</b>${example}</div>` : ""}
+  </div></details>`;
+}
+function head(title, lead){ return `<div class="sec-head"><h1>${esc(title)}</h1><p class="lead">${lead}</p></div>`; }
+function removeBtn(arr, i, what){ return `<button class="btn ghost small" data-act="remove" data-arr="${arr}" data-i="${i}" aria-label="Remove ${esc(what)} ${i+1}">Remove</button>`; }
+
+const RENDER = {
+  overview(){
+    return head("Unit basics", "Name your unit and describe the big picture in a few sentences. This becomes the first rows of your plan.")
+    + guide("How to write a strong overview", [
+        "Say what students will explore and how the topics connect to each other.",
+        "Keep it to 2 to 4 sentences. Details belong in later sections.",
+        "A catchy unit title helps students remember the unit."
+      ], "In this unit, students explore maps and map features, organisms and their habitats, landforms, and natural disasters. Connected lessons build an understanding of how natural disasters affect the environment and the organisms living in it.")
+    + field("Unit title", "meta.title", {req:true, ph:"e.g., The Map of Your World"})
+    + `<div class="row2">${field("Grade level", "meta.grade", {req:true, ph:"e.g., Grade 3"})}${field("Content areas", "meta.subject", {ph:"e.g., Science, Social Studies, ELA"})}</div>`
+    + field("Your name", "meta.author", {ph:"Shown on the exported plan"})
+    + field("Unit overview", "meta.overview", {req:true, multi:true, rows:5});
+  },
+  dq(){
+    const subs = plan.dq.subs.map((s,i)=>`<div class="li"><span class="idx">${i+1}.</span><div class="grow"><input type="text" data-path="dq.subs.${i}" value="${esc(s)}" aria-label="Subquestion ${i+1}" placeholder="Something students need to learn to answer the DQ"></div>${removeBtn("dq.subs",i,"subquestion")}</div>`).join("");
+    const openTutor = !filled(plan.dq.driving) || plan.dqTutor.step>0;
+    return head("Driving question", "One question that captures the heart of the unit and gives every lesson a purpose. The tutor below walks you through it step by step.")
+    + `<details class="tutor-wrap" ${openTutor?"open":""}><summary>Driving question tutor</summary>${tutor()}</details>`
+    + `<div class="block" id="dqFinal"><h3>Your driving question</h3><p class="sub">Use the tutor, or type it here directly.</p>`
+    + field("Driving question", "dq.driving", {req:true, multi:true, rows:2})
+    + `<div class="field"><span class="flabel">Subquestions that support the driving question<span class="req" aria-hidden="true">*</span></span><span class="hint">What will students need to learn to answer the DQ? Each subquestion should match something you teach in a lesson.</span><div class="list">${subs}</div><button class="btn small" data-act="add" data-arr="dq.subs" data-kind="str">Add subquestion</button></div></div>`;
+  },
+  standards(){
+    const rows = plan.standards.map((s,i)=>`<div class="li"><span class="idx">${i+1}.</span><div class="grow std-grid">
+      <input type="text" data-path="standards.${i}.code" value="${esc(s.code)}" aria-label="Standard ${i+1} code" placeholder="Code, e.g. 3.G.1">
+      <textarea data-path="standards.${i}.text" rows="2" aria-label="Standard ${i+1} text" placeholder="Full text of the standard">${esc(s.text)}</textarea>
+    </div>${removeBtn("standards",i,"standard")}</div>`).join("");
+    return head("Standards", "List every standard the unit addresses, with its code and full text. Include standards from each content area.")
+    + guide("Tips for standards", [
+        "Copy the code exactly as it appears in the official PDF so it can be linked to lessons later.",
+        "Include standards from more than one content area when the unit is integrated (for example, science plus ELA).",
+        "Every standard you list should appear in at least one lesson. The review page checks this for you."
+      ], "3.G.1 Use labels and symbols to locate and identify physical and political features on maps and/or globes.")
+    + `<div class="block stdlinks"><h3>Find your standards</h3><p class="sub">Open your subject on the Indiana Department of Education site, choose the PDF for your grade, and copy the code and the full text of each standard into the boxes below.</p>
+        <div class="slinks">
+          <a href="https://www.in.gov/doe/students/indiana-academic-standards/englishlanguage-arts" target="_blank" rel="noopener noreferrer"><b>English/Language Arts</b><span>2023 standards</span></a>
+          <a href="https://www.in.gov/doe/students/indiana-academic-standards/mathematics" target="_blank" rel="noopener noreferrer"><b>Mathematics</b><span>2023 standards</span></a>
+          <a href="https://www.in.gov/doe/students/indiana-academic-standards/science-and-computer-science" target="_blank" rel="noopener noreferrer"><b>Science</b><span>2023 standards</span></a>
+          <a href="https://www.in.gov/doe/students/indiana-academic-standards/social-studies" target="_blank" rel="noopener noreferrer"><b>Social Studies</b><span>2026 and 2023 standards</span></a>
+        </div>
+        <p class="note">Social Studies has a new 2026 version listed next to the 2023 version. Ask your instructor or mentor teacher which one your practicum school uses. Links open in a new tab.</p>
+      </div>`
+    + `<div class="list">${rows}</div><button class="btn small" data-act="add" data-arr="standards" data-kind="std">Add standard</button>`;
+  },
+  objectives(){
+    const rows = plan.objectives.map((o,i)=>`<div class="li"><span class="idx">${i+1}.</span><div class="grow"><input type="text" data-path="objectives.${i}.text" value="${esc(o.text)}" aria-label="Objective ${i+1}" placeholder="describe what plants need to survive."></div>${removeBtn("objectives",i,"objective")}</div>`).join("");
+    return head("Learning objectives", "By the end of this unit, students will be able to:")
+    + guide("Writing objectives you can assess", [
+        "Start with one observable verb: describe, identify, design, explain, compare, argue.",
+        "Avoid verbs you cannot see, like understand, know, or learn about.",
+        "Do not repeat the same content with a different verb. For example, \u201cidentify cardinal directions\u201d and \u201crecognize cardinal directions\u201d can be one objective.",
+        "Every objective should be taught in at least one lesson and checked by at least one assessment."
+      ], "explain how natural disasters affect people, plants, and animals.")
+    + `<div class="list">${rows}</div><button class="btn small" data-act="add" data-arr="objectives" data-kind="obj">Add objective</button>`;
+  },
+  assess(){
+    const f = plan.assess.formative.map((a,i)=>`<div class="li"><span class="idx">${i+1}.</span><div class="grow">
+      <input type="text" data-path="assess.formative.${i}.title" value="${esc(a.title)}" aria-label="Formative ${i+1} name" placeholder="Name, e.g. Treasure hunt">
+      <textarea data-path="assess.formative.${i}.desc" rows="2" aria-label="Formative ${i+1} description" placeholder="What students do and what it shows you">${esc(a.desc)}</textarea>
+      <input type="text" data-path="assess.formative.${i}.link" value="${esc(a.link)}" aria-label="Formative ${i+1} link" placeholder="Link (optional)">
+    </div>${removeBtn("assess.formative",i,"formative assessment")}</div>`).join("");
+    const s = plan.assess.summative.map((a,i)=>`<div class="li"><span class="idx">${i+1}.</span><div class="grow">
+      <input type="text" data-path="assess.summative.${i}.title" value="${esc(a.title)}" aria-label="Summative ${i+1} name" placeholder="Name, e.g. Narrative writing">
+      <textarea data-path="assess.summative.${i}.desc" rows="2" aria-label="Summative ${i+1} description" placeholder="What students produce and how it answers the driving question">${esc(a.desc)}</textarea>
+    </div>${removeBtn("assess.summative",i,"summative assessment")}</div>`).join("");
+    return head("Assessments", "Plan how you will find out what students know before, during, and at the end of the unit.")
+    + guide("Assessment tips", [
+        "Write the actual activity, not the template label. Delete any leftover text in brackets like [Formative assessment 1 details].",
+        "Each formative assessment should check a specific objective.",
+        "At least one summative assessment should answer the driving question directly."
+      ], "Summative: Students write a narrative answering \u201cHow would (assigned natural disaster) affect the landforms, organisms, and people living in your perfect place?\u201d")
+    + field("Pre-assessment or survey", "assess.pre", {req:true, multi:true, rows:2, hint:"Describe it and add a link if you have one."})
+    + `<div class="block"><h3>Formative assessments</h3><p class="sub">Checks for understanding during the unit.</p><div class="list">${f}</div><button class="btn small" data-act="add" data-arr="assess.formative" data-kind="form">Add formative assessment</button></div>`
+    + `<div class="block"><h3>Summative assessments</h3><p class="sub">Final products that show what students learned.</p><div class="list">${s}</div><button class="btn small" data-act="add" data-arr="assess.summative" data-kind="summ">Add summative assessment</button></div>`;
+  },
+  lessons(){
+    const ira = plan.lessons.filter(l=>l.type==="ira").length;
+    const det = plan.lessons.filter(l=>l.type==="detailed").length;
+    const n = plan.lessons.length;
+    const summary = `<div class="req-summary">
+      <span class="${n===LESSON_TARGET?"ok":"no"}">${n} of ${LESSON_TARGET} lessons</span>
+      <span class="${ira>=1?"ok":"no"}">IRA lesson: ${ira}</span>
+      <span class="${det>=2?"ok":"no"}">Detailed plans: ${det} of 2</span>
+    </div>`;
+    const stdOpts = (l,i) => plan.standards.filter(s=>filled(s.code)).length
+      ? `<div class="checks">${plan.standards.filter(s=>filled(s.code)).map(s=>`<label title="${esc(s.text)}"><input type="checkbox" data-link="lessons.${i}.standards" value="${s.id}" ${l.standards.includes(s.id)?"checked":""}>${esc(s.code)}</label>`).join("")}</div>`
+      : `<span class="empty-note">Add standard codes in the Standards section first.</span>`;
+    const objOpts = (l,i) => plan.objectives.filter(o=>filled(o.text)).length
+      ? `<div class="checks">${plan.objectives.map((o,j)=>filled(o.text)?`<label title="${esc(o.text)}"><input type="checkbox" data-link="lessons.${i}.objectives" value="${o.id}" ${l.objectives.includes(o.id)?"checked":""}>Objective ${j+1}</label>`:"").join("")}</div>`
+      : `<span class="empty-note">Add objectives first.</span>`;
+    const cards = plan.lessons.map((l,i)=>{
+      const tag = l.type==="ira" ? '<span class="tag ira">IRA</span>' : l.type==="detailed" ? '<span class="tag detailed">Detailed plan</span>' : "";
+      const missing = (!filled(l.title)||!filled(l.desc)||!filled(l.materials)||!filled(l.time)) ? '<span class="tag miss">Incomplete</span>' : "";
+      const extra = l.type!=="regular" ? `
+        ${field("Step-by-step procedure", `lessons.${i}.procedure`, {req:true, multi:true, rows:6, hint: l.type==="ira" ? "Before reading, during reading, after reading. Include the questions you will ask." : "Opening, teaching, guided practice, independent practice, closing."})}
+        ${field("How you will check for understanding", `lessons.${i}.check`, {multi:true, rows:2})}` : "";
+      return `<details class="lesson" data-lid="${l.id}" ${openLessons.has(l.id)?"open":""}>
+        <summary><span class="lnum">Lesson ${i+1}</span><span class="ltitle ${filled(l.title)?"":"empty"}">${filled(l.title)?esc(l.title):"No title yet"}</span>${tag}${missing}</summary>
+        <div class="lbody">
+          ${field("Lesson title", `lessons.${i}.title`, {req:true, ph:"e.g., Habitats"})}
+          <div class="field"><span class="flabel">Lesson type</span><div class="type-pick" role="radiogroup" aria-label="Lesson ${i+1} type">
+            ${[["regular","Regular"],["ira","IRA (interactive read-aloud)"],["detailed","Detailed plan"]].map(([v,t])=>`<label><input type="radio" name="type_${l.id}" data-path="lessons.${i}.type" value="${v}" ${l.type===v?"checked":""}>${t}</label>`).join("")}
+          </div></div>
+          ${field("Brief description of the activity", `lessons.${i}.desc`, {req:true, multi:true, rows:3})}
+          ${field("Materials required", `lessons.${i}.materials`, {req:true, multi:true, rows:4, hint:"Books, slides, worksheets, links, and supplies. One per line works well."})}
+          <div class="field"><span class="flabel">Standards addressed</span>${stdOpts(l,i)}</div>
+          <div class="field"><span class="flabel">Objectives addressed</span>${objOpts(l,i)}</div>
+          ${extra}
+          ${field("Estimated time", `lessons.${i}.time`, {req:true, ph:"e.g., 50 minutes"})}
+          <div style="text-align:right;margin-bottom:10px">${removeBtn("lessons",i,"lesson")}</div>
+        </div></details>`;
+    }).join("");
+    return head("Learning activities", `Plan ${LESSON_TARGET} lessons. One must be an interactive read-aloud (IRA), and two more need detailed plans.`)
+    + guide("Planning the lesson sequence", [
+        "Order lessons so each one builds on the last and leads toward the summative assessment.",
+        "Link each lesson to the standards and objectives it teaches. The review page uses these links.",
+        "For materials, name the actual resource (title and link), not just \u201cslides\u201d or \u201cworksheet\u201d.",
+        "IRA and detailed plans get extra fields for a full procedure."
+      ], "Lesson: Maps and map features. Students learn cardinal directions with a mnemonic anchor chart, then show what they learned in a treasure hunt and a map key worksheet. 60 minutes.")
+    + summary + cards
+    + `<button class="btn small" data-act="add" data-arr="lessons" data-kind="lesson">Add lesson</button>`;
+  },
+  resources(){
+    return head("Resources and materials", "Collect the main resources for the whole unit in one place.")
+    + guide("What to include", ["Books and texts students will read.", "Websites, videos, and apps.", "Anything else a substitute teacher would need to find."], "Field Detectives: Investigating Playground Habitats (book); Generation Genius science videos (website)")
+    + field("Textbooks, reading materials, online resources", "resources.texts", {req:true, multi:true, rows:4})
+    + field("Technology tools", "resources.tech", {multi:true, rows:3})
+    + field("Other resources", "resources.other", {multi:true, rows:3});
+  },
+  diff(){
+    return head("Differentiation strategies", "Describe how you will adjust the unit so every learner can succeed.")
+    + guide("Make strategies specific", [
+        "Connect each strategy to a real task in this unit (the map, the presentation, the narrative).",
+        "Think beyond extra time: choice, scaffolds, grouping, alternate formats.",
+        "Consider English learners and students with IEPs in the Other field."
+      ], "Additional support: Students may tell their narrative to the teacher out loud before writing, and write one paragraph instead of three to five.")
+    + field("For gifted learners", "diff.gifted", {req:true, multi:true, rows:3})
+    + field("For students requiring additional support", "diff.support", {req:true, multi:true, rows:4})
+    + field("Other strategies (English learners, IEP, 504, etc.)", "diff.other", {multi:true, rows:3});
+  },
+  reflect(){
+    return head("Reflection and adaptation", "Fill this in after you teach the unit. It is optional for the first draft.")
+    + field("What worked well and engaged students effectively?", "reflect.worked", {multi:true, rows:4})
+    + field("What needs improvement or adjustment next time?", "reflect.improve", {multi:true, rows:4});
+  },
+  review(){
+    const issues = checkPlan();
+    const errs = issues.filter(x=>x.lvl==="err").length, warns = issues.filter(x=>x.lvl==="warn").length;
+    const done = SECTIONS.filter(s=>s.id!=="review" && s.id!=="reflect" && status(s.id)==="done").length;
+    const list = issues.length
+      ? `<ul class="issues">${issues.map(x=>`<li><span class="lvl ${x.lvl}">${x.lvl==="err"?"Missing":"Check"}</span><span class="msg">${esc(x.msg)}</span><button class="btn link where" data-act="nav" data-sec="${x.sec}" ${x.lid?`data-lid="${x.lid}"`:""}>Go to ${esc(SECTIONS.find(s=>s.id===x.sec).label)}</button></li>`).join("")}</ul>`
+      : `<div class="allclear">No problems found. Your plan is ready to export.</div>`;
+    return head("Review and export", "Fix the items below, then download your plan.")
+    + `<div class="score"><div><div class="big">${done}/8</div><div class="cap">sections complete</div></div><div><div class="big">${errs}</div><div class="cap">missing items</div></div><div><div class="big">${warns}</div><div class="cap">things to check</div></div></div>`
+    + list
+    + `<h2 class="h">Download</h2><div class="exports">
+        <button class="btn primary" data-act="exportDocx">Download Word (.docx)</button>
+        <button class="btn" data-act="exportPdf">Download PDF</button>
+        <button class="btn" data-act="exportJson">Save backup file (.json)</button>
+      </div><p class="note">You can download at any time, even with missing items. The backup file lets you continue on another computer with "Open saved file".</p>`
+    + `<h2 class="h">Standards coverage</h2><p class="note">Which lessons teach each standard. Rows in red are not taught in any lesson.</p>${matrix("standards")}`
+    + `<h2 class="h">Objectives coverage</h2><p class="note">Which lessons teach each objective.</p>${matrix("objectives")}`;
+  }
+};
+
+/* ---------- driving question tutor ---------- */
+const TSTEPS = ["Begin with the end", "Choose a DQ type", "Plan the end product", "Draft and test", "How will you know?"];
+const PRODUCT_HINTS = [
+  {re:/\b(write|writing|composition|narrative|informative|essay|opinion piece)/i, what:"write", ideas:"a story, letter, article, or picture book"},
+  {re:/\b(present|presentation|oral|speak|recite|perform)/i, what:"present or perform", ideas:"a presentation, performance, or museum exhibit"},
+  {re:/\b(map|maps|globe|globes)\b/i, what:"use or make maps", ideas:"a map, atlas, or tour guide"},
+  {re:/\b(design|build|construct|engineer|model|solution|prototype)/i, what:"design, build, or solve", ideas:"a model, invention, or design proposal"},
+  {re:/\b(argument|claim|evidence|debate|persuade|opinion)/i, what:"argue with evidence", ideas:"a debate, persuasive letter, or proposal"},
+  {re:/\b(data|graph|chart|measure|measurement|survey)/i, what:"collect or show data", ideas:"a survey report, chart display, or field guide"},
+  {re:/\b(community|government|citizen|civic|history|historical|leader)/i, what:"study communities or history", ideas:"a community event, action plan, or class museum"}
+];
+const STOP = new Set("about after again also because before being between both could does doing during each from have having into more most other should their there these they this those through under until very what when where which while will with would your students student grade level using examples include including understand".split(" "));
+
+function bubble(html){ return `<div class="tbubble"><span class="tavatar" aria-hidden="true">T</span><div>${html}</div></div>`; }
+function tnav(back, next, nextLabel){
+  return `<div class="tnav">${back!=null?`<button class="btn" data-act="tstep" data-step="${back}">Back</button>`:"<span></span>"}${next!=null?`<button class="btn primary" data-act="tstep" data-step="${next}">${nextLabel||"Next"}</button>`:"<span></span>"}</div>`;
+}
+function tfield(label, key, o={}){ return field(label, "dqTutor."+key, o); }
+function focusStds(){ return plan.standards.filter(s=>filled(s.code) && plan.dqTutor.focus.includes(s.id)); }
+
+function templateDq(){
+  const t = plan.dqTutor, b = s => filled(s) ? s.trim().replace(/[?.!]+$/,"") : "___";
+  if(t.type==="debate") return filled(t.issue) ? (/\?$/.test(t.issue.trim())?t.issue.trim():t.issue.trim()+"?") : "Should ___?";
+  if(t.type==="role") return `How can we, as ${b(t.role)}, ${b(t.task)} ${b(t.purpose)}${filled(t.audience)?" for "+t.audience.trim():""}?`;
+  return `How can we ${b(t.task)}${filled(t.audience)?" for "+t.audience.trim():""}?`;
+}
+function stems(){
+  const t = plan.dqTutor;
+  if(t.type==="debate") return ["Should ___?", "Does it matter ___?", "Is it fair that ___?", "What would happen if ___?", "Do ___ really ___?"];
+  if(t.type==="role") return ["How can we, as ___, ___ for ___?", "How do we, as ___, convince ___ to ___?", "How can we, as ___, help ___ decide ___?"];
+  return ["How can we create ___ for ___?", "How can we make ___?", "How can we plan ___?", "How can we help ___ ___?"];
+}
+function dqChecks(q){
+  const out = [];
+  const s = (q||"").trim();
+  if(!s) return out;
+  const w = s.split(/\s+/).length;
+  if(!/\?$/.test(s)) out.push(["warn","End it with a question mark."]);
+  if(/_{2,}/.test(s)) out.push(["err","Fill in every blank (___)."]);
+  if(/^(what is|what are|who is|who are|when|where|define|list|name|which)\b/i.test(s)) out.push(["warn","Questions that start like this can often be answered with a single fact. Try How can we, Should, or What would happen if."]);
+  if(w<6) out.push(["warn","This is very short. Does it say enough to give the unit a direction?"]);
+  if(w>30) out.push(["warn",`At ${w} words this may be hard for students to remember. Try to say it in one breath.`]);
+  const stdWords = new Set(plan.standards.flatMap(x=>words(x.text||"")).filter(x=>x.length>=8 && !STOP.has(x)));
+  const hits = [...new Set(words(s).filter(x=>stdWords.has(x)))];
+  if(hits.length>=2) out.push(["warn",`It repeats standards vocabulary (${hits.slice(0,4).join(", ")}). You do not need to state the content in the question. Students will need it anyway to answer.`]);
+  const long = words(s).filter(x=>x.length>=12);
+  if(long.length) out.push(["warn",`Will your students understand "${long[0]}"? Use their words when you can.`]);
+  if(!out.length) out.push(["ok","No problems found by the automatic check. Now use the four questions below."]);
+  return out;
+}
+
+function tutor(){
+  const t = plan.dqTutor, step = Math.max(0, Math.min(4, t.step||0));
+  const dots = `<ol class="tsteps">${TSTEPS.map((n,i)=>`<li><button class="tdot ${i===step?"on":""} ${i<step?"past":""}" data-act="tstep" data-step="${i}" ${i===step?'aria-current="step"':""}><span>${i+1}</span>${n}</button></li>`).join("")}</ol>`;
+  return `<div class="tutor">${dots}<div class="tbody">${TUTOR[step]()}</div></div>`;
+}
+
+const TUTOR = [
+  function(){
+    const stds = plan.standards.filter(s=>filled(s.code));
+    const miss = [];
+    if(!filled(plan.meta.title)) miss.push(["overview","a unit topic or title"]);
+    if(!filled(plan.meta.overview)) miss.push(["overview","a unit overview"]);
+    if(!stds.length) miss.push(["standards","your standards"]);
+    const ready = !miss.length;
+    const summary = `<div class="tsum"><div><b>Topic</b>${filled(plan.meta.title)?esc(plan.meta.title):"<i>not set</i>"}${filled(plan.meta.grade)?" ("+esc(plan.meta.grade)+")":""}</div><div><b>Standards</b>${stds.length?stds.map(s=>esc(s.code)).join(", "):"<i>none yet</i>"}</div><div><b>Overview</b>${filled(plan.meta.overview)?esc(plan.meta.overview.slice(0,220))+(plan.meta.overview.length>220?"...":""):"<i>not written</i>"}</div></div>`;
+    return `<h3 class="th">Begin with the end in mind</h3>`
+      + bubble(`A driving question organizes every activity in your unit by stating its purpose. Before writing one, picture the last day of the unit: what will your students have made or done, and what will it show they learned? We will work backward from there.`)
+      + summary
+      + (ready ? bubble(`You have a topic, ${stds.length} standard${stds.length>1?"s":""}, and an overview. That is everything we need. Ready?`)
+               : bubble(`Before we start, you still need ${miss.map(m=>`<button class="btn link" data-act="nav" data-sec="${m[0]}">${m[1]}</button>`).join(" and ")}. The driving question grows out of those. You can also continue now and come back.`))
+      + tnav(null, 1, ready?"Let's start":"Continue anyway");
+  },
+  function(){
+    const t = plan.dqTutor;
+    const stds = plan.standards.filter(s=>filled(s.code));
+    const found = PRODUCT_HINTS.map(h=>({h, codes:stds.filter(s=>h.re.test(s.text)).map(s=>s.code)})).filter(x=>x.codes.length);
+    const hint = found.length
+      ? `Reading your standards, I notice they ask students to ${found.map(x=>`<b>${x.h.what}</b> (${esc(x.codes.join(", "))})`).join("; ")}. A project could combine these. For example: ${esc(found.slice(0,3).map(x=>x.h.ideas).join("; or "))}.`
+      : `Look at the verbs in your standards. Do they ask students to make, write, present, solve, or argue something? Those verbs point to a possible end product.`;
+    const opt = (v,title,desc,ex) => `<label class="topt ${t.type===v?"on":""}"><input type="radio" name="dqtype" data-path="dqTutor.type" value="${v}" ${t.type===v?"checked":""}><span><b>${title}</b><span>${desc}</span><i>${ex}</i></span></label>`;
+    let react = "";
+    if(t.type==="product") react = bubble("Good choice. Your question will name something students create, a task they do, or a problem they solve.");
+    if(t.type==="role") react = bubble("A role makes the project feel real. Students take on a job from the real world and do the work that person would do.");
+    if(t.type==="debate") react = bubble("Debatable questions work well when students must use evidence from the unit to defend their answer. Make sure there is a final product where they share their position.");
+    return `<h3 class="th">Based on the standards, do you want to do a project?</h3>`
+      + bubble(hint)
+      + `<p class="tq">What kind of driving question fits your unit?</p><div class="topts" role="radiogroup" aria-label="Driving question type">`
+      + opt("product","Create, do, or solve","Names a product to create, a task to do, or a problem to solve.","How can we make a farm in our classroom?")
+      + opt("role","Create with a role","Same as above, but students play a real-world role in a scenario.","How do we, as road builders, show our boss where a new road should go so it does not harm animal habitats?")
+      + opt("debate","Debate or big idea","Focuses on a debatable issue, a philosophical question, or an intriguing topic.","Does it matter how much sleep we get?")
+      + `</div>` + react
+      + tnav(0, t.type?2:null);
+  },
+  function(){
+    const t = plan.dqTutor;
+    const stds = plan.standards.filter(s=>filled(s.code));
+    const n = focusStds().length, total = stds.length;
+    const pct = total ? Math.round(n/total*100) : 0;
+    let meter = "";
+    if(total){
+      meter = n===0 ? bubble("Check the standards your end product will cover. Aim for most of them.")
+        : n/total>=0.5 ? bubble(`Your end product covers ${n} of ${total} standards. That meets the majority of your expectations.`)
+        : bubble(`Your end product covers ${n} of ${total} standards. Can you stretch it to cover more? For example, adding a written or spoken part often brings in ELA standards.`);
+    }
+    const checks = total ? `<div class="checks tcheck">${stds.map(s=>`<label title="${esc(s.text)}"><input type="checkbox" data-link="dqTutor.focus" value="${s.id}" ${t.focus.includes(s.id)?"checked":""}>${esc(s.code)}</label>`).join("")}</div><div class="tmeter" aria-hidden="true"><span style="width:${pct}%"></span></div>` : `<span class="empty-note">Add standards first.</span>`;
+    let fields = "";
+    if(t.type==="debate"){
+      fields = tfield("What is the issue or big idea students will take a position on?", "issue", {multi:true, rows:2, ph:"e.g., Should our school build a garden instead of a new parking lot?"})
+        + tfield("How will students share their answer at the end?", "task", {ph:"e.g., a class debate for families, a persuasive letter to the principal"});
+    } else {
+      if(t.type==="role") fields += tfield("Who in the real world does this work?", "role", {hint:"This is the role your students will play.", ph:"e.g., park rangers, newspaper reporters, city planners"});
+      fields += tfield(t.type==="role"?"What product will they create or what action will they take?":"What will students create, do, or solve?", "task", {hint:"Start with a verb.", ph:"e.g., create a field guide to the trees at our school"});
+      fields += tfield("What is the purpose?", "purpose", {hint:"To persuade, inform, propose a solution, celebrate, teach...", ph:"e.g., to show which trees need protecting"});
+      fields += tfield("Who is the audience?", "audience", {ph:"e.g., our principal, first graders, families at open house"});
+    }
+    fields += tfield("Localize it: where does this connect to your students' own lives or community?", "local", {multi:true, rows:2, hint:"Students engage more when the project is about their own school, town, or county, and when it gives them a real job to do.", ph:"e.g., the creek behind Longfellow, our school drop-off line, Muncie parks"});
+    return `<h3 class="th">What would be an interesting way to meet the majority of the expectations?</h3>`
+      + `<p class="tq">Which standards will the end product show?</p>` + checks + meter + fields
+      + tnav(1, 3);
+  },
+  function(){
+    const t = plan.dqTutor;
+    const tmpl = templateDq();
+    const res = dqChecks(t.draft);
+    const self = [
+      ["understand","Will my students understand it? Will they find it interesting?"],
+      ["open","Does it require in-depth inquiry and higher-level thinking? Is it open-ended, with several right answers or ways to do the task?"],
+      ["standards","To answer it, will students need the content and standards I selected?"],
+      ["noContent","Did I avoid stating the content in the question itself?"]
+    ];
+    const allSelf = self.every(([k])=>t.self.includes(k));
+    return `<h3 class="th">Create a driving question for your unit</h3>`
+      + (t.type!=="debate" ? bubble(`Here is your plan plugged into the template:<div class="tmpl">${esc(tmpl)}</div>Edit it until it sounds like something you would say to your students.`) : bubble(`Start from your issue and shape it into a question students can argue about.`))
+      + `<div class="tstems"><span class="tq">Start from:</span><button class="btn small" data-act="tstem" data-v="${esc(tmpl)}">My template</button>${stems().map(s=>`<button class="btn small" data-act="tstem" data-v="${esc(s)}">${esc(s)}</button>`).join("")}</div>`
+      + tfield("Your draft", "draft", {multi:true, rows:2})
+      + `<div class="tbtnrow"><button class="btn" data-act="tcheck">Check my question</button></div>`
+      + (filled(t.draft) ? `<ul class="tres">${res.map(([l,m])=>`<li class="${l}">${esc(m)}</li>`).join("")}</ul>` : "")
+      + `<p class="tq">Ask yourself:</p><div class="tself">${self.map(([k,q])=>`<label><input type="checkbox" data-link="dqTutor.self" value="${k}" ${t.self.includes(k)?"checked":""}><span>${q}</span></label>`).join("")}</div>`
+      + `<details class="guide tex"><summary>See examples of strong driving questions</summary><div class="g-body">
+          <p><b>Make it student-friendly.</b> Instead of "What adaptations do animal species make in order to survive in various habitats?" ask "Can a dog live in the desert?"</p>
+          <p><b>Make it open-ended.</b> Instead of "What trees grow in our community?" ask "How can we create a field guide to trees in our community?"</p>
+          <p><b>Do not state the content.</b> Instead of "How can we use measurement skills and knowledge of geometry to plan a playground?" ask "How can we plan a playground?"</p>
+          <p><b>Localize and charge it.</b> Instead of "How do plants get what they need?" (general) try "What plants could grow in our school courtyard?" (local) or "How can we turn our courtyard into a garden the whole school can enjoy?" (a real job to do).</p>
+        </div></details>`
+      + `<details class="guide tex"><summary>Optional: connect it to Big Idea and Enduring Understanding (UbD)</summary><div class="g-body">`
+      + tfield("Big idea", "bigIdea", {ph:"e.g., change over time"})
+      + tfield("Enduring understanding", "understanding", {multi:true, rows:2, ph:"What should students still understand years from now?"})
+      + tfield("Essential question", "essential", {ph:"A broad question, e.g., How does a place change?"})
+      + `<p class="note">These are added to your exported plan when filled in.</p></div></details>`
+      + (allSelf && filled(t.draft) && !res.some(r=>r[0]==="err") ? bubble("You answered yes to all four questions. Use it as your driving question, then plan how you will know students are learning.") : "")
+      + `<div class="tnav"><button class="btn" data-act="tstep" data-step="2">Back</button><span class="tright"><button class="btn" data-act="tuse">Use as my driving question</button><button class="btn primary" data-act="tstep" data-step="4">Next</button></span></div>`;
+  },
+  function(){
+    const t = plan.dqTutor;
+    const fs = focusStds();
+    const rows = fs.length ? fs.map(s=>`<div class="field"><label for="ev_${s.id}">${esc(s.code)}<span class="hint" style="display:block;font-weight:400">${esc(s.text.slice(0,160))}${s.text.length>160?"...":""}</span></label><input type="text" id="ev_${s.id}" data-path="dqTutor.evidence.${s.id}" value="${esc(t.evidence[s.id]||"")}" placeholder="What in the end product will show this?"></div>`).join("")
+      : `<p class="empty-note">Go back to step 3 and check the standards your end product covers.</p>`;
+    const empty = fs.filter(s=>!filled(t.evidence[s.id])).length;
+    return `<h3 class="th">How will you know they are learning?</h3>`
+      + bubble(`Your driving question is set. Now decide how you will see learning happen: a pre and post assessment, and a rubric for the end product. A good rubric has one row for each standard the product covers.`)
+      + `<p class="tq">For each standard, what in the end product will show it? These become your rubric rows.</p>` + rows
+      + (fs.length && empty ? bubble(`${empty} standard${empty>1?"s still need":" still needs"} evidence. If you cannot name any, the end product may not really cover that standard.`) : "")
+      + tfield("Pre/post assessment: how will you find out what students know before and after?", "prepost", {multi:true, rows:2, ph:"e.g., the same short survey on day 1 and the last day"})
+      + `<div class="tbtnrow"><button class="btn" data-act="tsumm">Add end product to my summative assessments</button><button class="btn" data-act="tpre">Use as my pre-assessment</button></div>`
+      + tnav(3, null)
+      + `<div class="tbtnrow"><button class="btn primary" data-act="nav" data-sec="objectives">Continue to Learning objectives</button></div>`;
+  }
+];
+
+function matrix(kind){
+  const rows = kind==="standards" ? plan.standards.filter(s=>filled(s.code)) : plan.objectives.filter(o=>filled(o.text));
+  if(!rows.length) return `<p class="empty-note">Nothing to show yet.</p>`;
+  const L = plan.lessons;
+  const headRow = `<tr><th scope="col">${kind==="standards"?"Standard":"Objective"}</th>${L.map((l,i)=>`<th scope="col" title="${esc(l.title)}">L${i+1}</th>`).join("")}</tr>`;
+  const body = rows.map(r=>{
+    const name = kind==="standards" ? r.code : `${plan.objectives.indexOf(r)+1}. ${r.text}`;
+    const hits = L.map(l=>l[kind].includes(r.id));
+    return `<tr class="${hits.some(Boolean)?"":"gap"}"><td title="${esc(kind==="standards"?r.text:r.text)}">${esc(name)}</td>${hits.map(h=>`<td class="${h?"hit":""}">${h?"Yes":""}</td>`).join("")}</tr>`;
+  }).join("");
+  return `<div class="matrix-wrap"><table class="matrix"><thead>${headRow}</thead><tbody>${body}</tbody></table></div>`;
+}
+
+/* ---------- checks ---------- */
+const PLACEHOLDER = /\[[A-Za-z][^\]]{2,}\]/;
+function walkStrings(o, fn, path=""){
+  if(typeof o==="string") return fn(o, path);
+  if(Array.isArray(o)) return o.forEach((v,i)=>walkStrings(v, fn, path+"."+i));
+  if(o && typeof o==="object") Object.keys(o).forEach(k=>{ if(k!=="id") walkStrings(o[k], fn, path?path+"."+k:k); });
+}
+function words(s){ return s.toLowerCase().replace(/[^a-z0-9\s]/g," ").split(/\s+/).filter(Boolean); }
+
+function checkPlan(){
+  const out = [];
+  const E = (sec,msg,lid)=>out.push({lvl:"err",sec,msg,lid});
+  const W = (sec,msg,lid)=>out.push({lvl:"warn",sec,msg,lid});
+  const p = plan;
+  if(!filled(p.meta.title)) E("overview","Add a unit title.");
+  if(!filled(p.meta.grade)) E("overview","Add the grade level.");
+  if(!filled(p.meta.overview)) E("overview","Write the unit overview.");
+  if(!filled(p.dq.driving)) E("dq","Write the driving question.");
+  else if(!/\?\s*$/.test(p.dq.driving.trim())) W("dq","The driving question does not end with a question mark.");
+  if(!p.dq.subs.some(filled)) E("dq","Add at least one subquestion.");
+  const stds = p.standards.filter(s=>filled(s.code)||filled(s.text));
+  if(!stds.length) E("standards","Add at least one standard.");
+  stds.forEach((s,i)=>{ if(!filled(s.code)) E("standards",`Standard ${i+1} is missing its code.`); if(!filled(s.text)) E("standards",`Standard ${s.code||i+1} is missing its full text.`); });
+  const objs = p.objectives.filter(o=>filled(o.text));
+  if(!objs.length) E("objectives","Add at least one learning objective.");
+  for(let a=0;a<objs.length;a++) for(let b=a+1;b<objs.length;b++){
+    const wa = words(objs[a].text), wb = words(objs[b].text);
+    const restSame = wa.slice(1).join(" ") === wb.slice(1).join(" ") && wa.length>1;
+    const sa = new Set(wa), sb = new Set(wb); const inter=[...sa].filter(x=>sb.has(x)).length; const jac = inter/(new Set([...sa,...sb]).size||1);
+    if(restSame || jac>=0.8) W("objectives",`Objectives ${p.objectives.indexOf(objs[a])+1} and ${p.objectives.indexOf(objs[b])+1} look almost the same. Consider combining them.`);
+  }
+  const vague = /^(understand|know|learn|appreciate|be aware)/i;
+  objs.forEach(o=>{ if(vague.test(o.text.trim())) W("objectives",`Objective ${p.objectives.indexOf(o)+1} starts with a verb you cannot observe ("${o.text.trim().split(/\s+/)[0]}"). Try describe, identify, or explain.`); });
+  if(!filled(p.assess.pre)) E("assess","Describe the pre-assessment.");
+  const form = p.assess.formative.filter(a=>filled(a.title)||filled(a.desc));
+  if(!form.length) E("assess","Add at least one formative assessment.");
+  form.forEach((a,i)=>{ if(!filled(a.desc)) E("assess",`Formative assessment "${a.title||i+1}" needs a description.`); });
+  const summ = p.assess.summative.filter(a=>filled(a.title)||filled(a.desc));
+  if(!summ.length) E("assess","Add at least one summative assessment.");
+  summ.forEach((a,i)=>{ if(!filled(a.desc)) E("assess",`Summative assessment "${a.title||i+1}" needs a description.`); });
+
+  const L = p.lessons;
+  if(L.length!==LESSON_TARGET) E("lessons",`The plan needs ${LESSON_TARGET} lessons. You have ${L.length}.`);
+  if(!L.some(l=>l.type==="ira")) E("lessons","Mark one lesson as the IRA (interactive read-aloud).");
+  const det = L.filter(l=>l.type==="detailed").length;
+  if(det<2) E("lessons",`Mark ${2-det} more lesson${2-det>1?"s":""} as a detailed plan.`);
+  L.forEach((l,i)=>{
+    const n = `Lesson ${i+1}${filled(l.title)?" ("+l.title.trim()+")":""}`;
+    const miss = [];
+    if(!filled(l.title)) miss.push("title"); if(!filled(l.desc)) miss.push("description"); if(!filled(l.materials)) miss.push("materials"); if(!filled(l.time)) miss.push("estimated time");
+    if(l.type!=="regular" && !filled(l.procedure)) miss.push("step-by-step procedure");
+    if(miss.length) E("lessons",`${n} is missing: ${miss.join(", ")}.`, l.id);
+    else if(!l.standards.length) W("lessons",`${n} is not linked to any standard.`, l.id);
+  });
+  const stdIds = new Set(L.flatMap(l=>l.standards));
+  p.standards.filter(s=>filled(s.code)).forEach(s=>{ if(!stdIds.has(s.id)) W("lessons",`Standard ${s.code} is not taught in any lesson.`); });
+  const objIds = new Set(L.flatMap(l=>l.objectives));
+  objs.forEach(o=>{ if(!objIds.has(o.id)) W("lessons",`Objective ${p.objectives.indexOf(o)+1} is not taught in any lesson.`); });
+
+  if(!filled(p.resources.texts)) E("resources","List the main texts and online resources.");
+  if(!filled(p.diff.gifted)) E("diff","Add a strategy for gifted learners.");
+  if(!filled(p.diff.support)) E("diff","Add a strategy for students who need more support.");
+
+  const seen = new Set();
+  walkStrings(p, (s, path)=>{
+    if(PLACEHOLDER.test(s)){
+      const top = path.split(".")[0];
+      const map = {meta:"overview", dq:"dq", dqTutor:"dq", standards:"standards", objectives:"objectives", assess:"assess", lessons:"lessons", resources:"resources", diff:"diff", reflect:"reflect"};
+      const sec = map[top] || "overview";
+      if(seen.has(sec)) return; seen.add(sec);
+      W(sec, `Leftover template text found: "${s.match(PLACEHOLDER)[0]}". Replace it with your own content.`);
+    }
+  });
+  return out;
+}
+
+function status(sec){
+  const issues = checkPlan().filter(x=>x.sec===sec && x.lvl==="err");
+  const any = (()=>{ let f=false; const map={overview:plan.meta, dq:plan.dq, standards:plan.standards, objectives:plan.objectives, assess:plan.assess, lessons:plan.lessons, resources:plan.resources, diff:plan.diff, reflect:plan.reflect}; walkStrings(map[sec]||{}, s=>{ if(filled(s) && !["regular","ira","detailed"].includes(s)) f=true; }); return f; })();
+  if(sec==="reflect") return (filled(plan.reflect.worked)&&filled(plan.reflect.improve))?"done":any?"partial":"empty";
+  if(!any) return "empty";
+  return issues.length ? "partial" : "done";
+}
+
+/* ---------- rendering ---------- */
+function renderSteps(){
+  const el = document.getElementById("steps");
+  el.innerHTML = SECTIONS.map((s,i)=>{
+    const st = s.id==="review" ? "" : status(s.id);
+    const word = st==="done"?"Done":st==="partial"?"In progress":"";
+    return `<li><button class="step" data-act="nav" data-sec="${s.id}" data-status="${st}" ${current===s.id?'aria-current="step"':""}><span class="num">${i+1}</span><span class="lbl">${s.label}</span><span class="st">${word}</span></button></li>`;
+  }).join("");
+}
+function renderHeader(){
+  const n = document.getElementById("unitName");
+  n.textContent = filled(plan.meta.title) ? plan.meta.title : "Untitled unit";
+  n.classList.toggle("empty", !filled(plan.meta.title));
+}
+function renderMain(focusTop){
+  const idx = SECTIONS.findIndex(s=>s.id===current);
+  const prev = SECTIONS[idx-1], next = SECTIONS[idx+1];
+  document.getElementById("inner").innerHTML = RENDER[current]()
+    + `<div class="nav-foot">${prev?`<button class="btn" data-act="nav" data-sec="${prev.id}">Back: ${prev.label}</button>`:"<span></span>"}${next?`<button class="btn primary" data-act="nav" data-sec="${next.id}">Next: ${next.label}</button>`:"<span></span>"}</div>`;
+  if(focusTop) window.scrollTo({top:0});
+}
+function renderAll(focusTop){ renderHeader(); renderSteps(); renderMain(focusTop); }
+
+/* ---------- events ---------- */
+const main = document.getElementById("main");
+main.addEventListener("input", e=>{
+  const t = e.target, path = t.dataset.path;
+  if(!path || t.type==="radio") return;
+  setP(path, t.value); save(); renderSteps();
+  if(path==="meta.title") renderHeader();
+  const m = path.match(/^lessons\.(\d+)\.title$/);
+  if(m){ const s = t.closest(".lesson").querySelector(".ltitle"); s.textContent = filled(t.value)?t.value:"No title yet"; s.classList.toggle("empty", !filled(t.value)); }
+});
+main.addEventListener("change", e=>{
+  const t = e.target;
+  if(t.type==="radio" && t.dataset.path){ setP(t.dataset.path, t.value); save(); rememberOpen(); renderSteps(); renderMain(); return; }
+  if(t.dataset.link){
+    const arr = getP(t.dataset.link);
+    const i = arr.indexOf(t.value);
+    if(t.checked && i<0) arr.push(t.value); if(!t.checked && i>=0) arr.splice(i,1);
+    save(); renderSteps();
+    if(t.dataset.link.startsWith("dqTutor")) renderMain();
+  }
+  if(t.dataset.path && /^lessons\.\d+\.(title|desc|materials|time|procedure)$/.test(t.dataset.path)){
+    const card = t.closest(".lesson"); const l = plan.lessons.find(x=>x.id===card.dataset.lid);
+    const incomplete = !filled(l.title)||!filled(l.desc)||!filled(l.materials)||!filled(l.time);
+    let tag = card.querySelector("summary .tag.miss");
+    if(incomplete && !tag){ tag=document.createElement("span"); tag.className="tag miss"; tag.textContent="Incomplete"; card.querySelector("summary").appendChild(tag); }
+    if(!incomplete && tag) tag.remove();
+  }
+});
+main.addEventListener("toggle", e=>{
+  const d = e.target; if(!d.classList || !d.classList.contains("lesson")) return;
+  if(d.open) openLessons.add(d.dataset.lid); else openLessons.delete(d.dataset.lid);
+}, true);
+function rememberOpen(){ document.querySelectorAll(".lesson").forEach(d=>{ if(d.open) openLessons.add(d.dataset.lid); else openLessons.delete(d.dataset.lid); }); }
+
+document.addEventListener("click", e=>{
+  const b = e.target.closest("[data-act]"); if(!b) return;
+  const act = b.dataset.act;
+  if(act==="nav"){
+    current = b.dataset.sec;
+    if(b.dataset.lid) openLessons.add(b.dataset.lid);
+    renderAll(true);
+    if(b.dataset.lid){ const d = document.querySelector(`.lesson[data-lid="${b.dataset.lid}"]`); if(d) d.scrollIntoView({block:"start"}); }
+    return;
+  }
+  if(act==="add"){
+    const arr = getP(b.dataset.arr);
+    const k = b.dataset.kind;
+    const item = k==="str" ? "" : k==="std" ? {id:uid(),code:"",text:""} : k==="obj" ? {id:uid(),text:""} : k==="form" ? {id:uid(),title:"",desc:"",link:""} : k==="summ" ? {id:uid(),title:"",desc:""} : blankLesson();
+    arr.push(item); if(k==="lesson") openLessons.add(item.id);
+    rememberOpen(); save(); renderSteps(); renderMain();
+    return;
+  }
+  if(act==="remove"){
+    const arr = getP(b.dataset.arr); const i = +b.dataset.i;
+    const it = arr[i];
+    const hasContent = (()=>{ let f=false; walkStrings(it, s=>{ if(filled(s) && !["regular","ira","detailed"].includes(s)) f=true; }); return f; })();
+    if(hasContent && !confirm("Remove this item? Its content will be deleted.")) return;
+    arr.splice(i,1);
+    if(it && it.id){ plan.lessons.forEach(l=>{ l.standards = l.standards.filter(x=>x!==it.id); l.objectives = l.objectives.filter(x=>x!==it.id); }); }
+    rememberOpen(); save(); renderSteps(); renderMain();
+    return;
+  }
+  if(act==="tstep"){ plan.dqTutor.step = +b.dataset.step; save(); renderMain(); const w=document.querySelector(".tutor-wrap"); if(w) w.scrollIntoView({block:"start"}); return; }
+  if(act==="tstem"){ plan.dqTutor.draft = b.dataset.v; save(); renderMain(); const d=document.getElementById("f_dqTutor_draft"); if(d){ d.focus(); const k=d.value.indexOf("___"); if(k>=0) d.setSelectionRange(k,k+3); } return; }
+  if(act==="tcheck"){ renderMain(); const r=document.querySelector(".tres"); if(r) r.scrollIntoView({block:"nearest"}); return; }
+  if(act==="tuse"){
+    if(!filled(plan.dqTutor.draft)) return toast("Write a draft first.");
+    if(filled(plan.dq.driving) && plan.dq.driving.trim()!==plan.dqTutor.draft.trim() && !confirm("Replace your current driving question with this draft?")) return;
+    plan.dq.driving = plan.dqTutor.draft.trim(); save(); renderSteps(); renderMain(); toast("Driving question saved"); return;
+  }
+  if(act==="tsumm"){
+    const t = plan.dqTutor;
+    if(!filled(t.task) && !filled(t.issue)) return toast("Describe the end product in step 3 first.");
+    const ev = focusStds().filter(s=>filled(t.evidence[s.id])).map(s=>`${s.code}: ${t.evidence[s.id].trim()}`);
+    const desc = [ [t.task, t.purpose].filter(filled).map(x=>x.trim()).join(" "), filled(t.audience)?"Audience: "+t.audience.trim()+".":"", ev.length?"Rubric rows:\n"+ev.join("\n"):"" ].filter(Boolean).join("\n");
+    const title = "End product" + (filled(plan.dq.driving) ? ": " + plan.dq.driving.trim() : "");
+    const list = plan.assess.summative;
+    const emptyIdx = list.findIndex(a=>!filled(a.title)&&!filled(a.desc));
+    const item = {id:uid(), title, desc};
+    if(emptyIdx>=0) list[emptyIdx] = item; else list.push(item);
+    save(); renderSteps(); toast("Added to Summative assessments"); return;
+  }
+  if(act==="tpre"){
+    if(!filled(plan.dqTutor.prepost)) return toast("Describe the pre/post assessment first.");
+    if(filled(plan.assess.pre) && !confirm("Replace your current pre-assessment?")) return;
+    plan.assess.pre = plan.dqTutor.prepost.trim(); save(); renderSteps(); toast("Pre-assessment saved"); return;
+  }
+  if(act==="exportDocx") return exportDocx();
+  if(act==="exportPdf") return exportPdf();
+  if(act==="exportJson") return saveFile(fileBase()+".json", JSON.stringify(plan, null, 2));
+  if(act==="importJson") return document.getElementById("fileIn").click();
+  if(act==="reset"){
+    if(!confirm("Start a new plan? Your current plan will be cleared from this browser. Save a backup file first if you want to keep it.")) return;
+    plan = blankPlan(); openLessons.clear(); current="overview"; save(); renderAll(true); toast("Started a new plan");
+    return;
+  }
+  if(act==="loadSample"){
+    if(!confirm("Load the sample unit? It replaces what is on screen now.")) return;
+    plan = normalize(SAMPLE()); openLessons.clear(); current="overview"; save(); renderAll(true); toast("Sample unit loaded");
+  }
+});
+document.getElementById("fileIn").addEventListener("change", e=>{
+  const f = e.target.files[0]; if(!f) return;
+  const r = new FileReader();
+  r.onload = ()=>{ try{ const d = JSON.parse(r.result); if(!d.meta||!d.lessons) throw 0; plan = normalize(d); openLessons.clear(); current="overview"; save(); renderAll(true); toast("Plan opened"); }catch(err){ toast("That file is not a Unit Plan Builder backup."); } };
+  r.readAsText(f); e.target.value="";
+});
+
+let toastT; function toast(m){ const t=document.getElementById("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(toastT); toastT=setTimeout(()=>t.classList.remove("show"),2800); }
+
+/* ---------- export content ---------- */
+function fileBase(){ return (filled(plan.meta.title)?plan.meta.title:"Unit Plan").replace(/[^\w\- ]+/g,"").trim().replace(/\s+/g,"_").slice(0,60) || "Unit_Plan"; }
+function numbered(arr){ return arr.filter(filled).map((s,i)=>`${i+1}. ${s.trim()}`).join("\n"); }
+function codesFor(ids){ return plan.standards.filter(s=>ids.includes(s.id)&&filled(s.code)).map(s=>s.code.trim()).join("; "); }
+function objsFor(ids){ return plan.objectives.map((o,i)=>ids.includes(o.id)&&filled(o.text)?String(i+1):null).filter(Boolean).join(", "); }
+
+function buildRows(){
+  const p = plan, rows = [];
+  const add = (label, blocks) => rows.push({label, blocks: blocks.filter(b=>filled(b.text))});
+  add("Unit Plan", [{text:p.meta.title}, {h:"Grade level", text:p.meta.grade}, {h:"Content areas", text:p.meta.subject}, {h:"Prepared by", text:p.meta.author}]);
+  add("Unit Overview", [{text:p.meta.overview}]);
+  add("Driving Question", [{text:p.dq.driving}]);
+  if([p.dqTutor.bigIdea,p.dqTutor.understanding,p.dqTutor.essential].some(filled))
+    add("Big Idea, Enduring Understanding, Essential Question", [{h:"Big Idea", text:p.dqTutor.bigIdea}, {h:"Enduring Understanding", text:p.dqTutor.understanding}, {h:"Essential Question", text:p.dqTutor.essential}]);
+  add("Subquestions that support DQ", [{text:p.dq.subs.filter(filled).map(s=>s.trim()).join("\n")}]);
+  add("Standards (Include Content area)", p.standards.filter(s=>filled(s.code)||filled(s.text)).map(s=>({text:`${s.code.trim()} ${s.text.trim()}`.trim()})));
+  add("Learning Objectives", [{text:"By the end of this unit, students will be able to:"}, {text:numbered(p.objectives.map(o=>o.text))}]);
+  const form = p.assess.formative.filter(a=>filled(a.title)||filled(a.desc)).map((a,i)=>`${i+1}. ${a.title.trim()}${filled(a.title)&&filled(a.desc)?": ":""}${a.desc.trim()}${filled(a.link)?"\n"+a.link.trim():""}`).join("\n");
+  const summ = p.assess.summative.filter(a=>filled(a.title)||filled(a.desc)).map((a,i)=>`${i+1}. ${a.title.trim()}${filled(a.title)&&filled(a.desc)?": ":""}${a.desc.trim()}`).join("\n");
+  add("Assessment Strategies", [{h:"Pre-Assessment / Survey", text:p.assess.pre}, {h:"Formative Assessments", text:form}, {h:"Summative Assessments", text:summ}]);
+  p.lessons.forEach((l,i)=>{
+    const t = l.type==="ira" ? " [IRA]" : l.type==="detailed" ? " [Detailed plan]" : "";
+    add(`Lesson ${i+1}: ${filled(l.title)?l.title.trim():"Untitled"}${t}`, [
+      {h:"Brief description of the activity", text:l.desc},
+      {h:"Materials required", text:l.materials},
+      {h:"Standards", text:codesFor(l.standards)},
+      {h:"Objectives", text:objsFor(l.objectives)},
+      ...(l.type!=="regular" ? [{h:"Procedure", text:l.procedure}, {h:"Check for understanding", text:l.check}] : []),
+      {h:"Estimated time", text:l.time}
+    ]);
+  });
+  add("Resources and Materials", [{h:"Textbooks, reading materials, online resources", text:p.resources.texts}, {h:"Technology tools", text:p.resources.tech}, {h:"Other resources", text:p.resources.other}]);
+  add("Differentiation Strategies", [{h:"Strategy for gifted learners", text:p.diff.gifted}, {h:"Strategy for students requiring additional support", text:p.diff.support}, {h:"Other differentiation strategies", text:p.diff.other}]);
+  add("Reflection and Adaptation", [{h:"What worked well and engaged students effectively?", text:p.reflect.worked}, {h:"What areas need improvement or adjustment for future iterations?", text:p.reflect.improve}]);
+  return rows;
+}
+
+function saveFile(name, data){
+  try{
+    const blob = data instanceof Blob ? data : new Blob([data], {type:"application/octet-stream"});
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast("Downloaded " + name);
+  }catch(e){ toast("Could not download the file. Try another browser."); }
+}
+
+async function exportDocx(){
+  if(!window.docx){ toast("The Word exporter did not load. Check your connection and reload."); return; }
+  const D = window.docx;
+  const P = (children, opts={}) => new D.Paragraph(Object.assign({children}, opts));
+  const lines = t => String(t).split(/\n/);
+  const rows = buildRows().map(r=>{
+    const content = [];
+    r.blocks.forEach((b,bi)=>{
+      if(b.h) content.push(P([new D.TextRun({text:b.h, bold:true})], {spacing:{before: bi?120:0, after:40}}));
+      lines(b.text).forEach(l=>content.push(P([new D.TextRun(l)], {spacing:{after:40}})));
+    });
+    if(!content.length) content.push(P([new D.TextRun("")]));
+    return new D.TableRow({cantSplit:false, children:[
+      new D.TableCell({width:{size:22, type:D.WidthType.PERCENTAGE}, shading:{fill:"DCE6F0", type:D.ShadingType.CLEAR, color:"auto"}, margins:{top:80,bottom:80,left:100,right:100},
+        children:[P([new D.TextRun({text:r.label, bold:true})])]}),
+      new D.TableCell({width:{size:78, type:D.WidthType.PERCENTAGE}, margins:{top:80,bottom:80,left:120,right:120}, children:content})
+    ]});
+  });
+  const doc = new D.Document({
+    creator: plan.meta.author || "Unit Plan Builder",
+    title: plan.meta.title || "Unit Plan",
+    styles:{default:{document:{run:{font:"Calibri", size:22}}}},
+    sections:[{properties:{page:{margin:{top:1080,bottom:1080,left:1080,right:1080}}}, children:[
+      P([new D.TextRun({text:"Unit Plan: " + (plan.meta.title || "Untitled"), bold:true, size:32})], {spacing:{after:200}}),
+      new D.Table({width:{size:100, type:D.WidthType.PERCENTAGE}, rows})
+    ]}]
+  });
+  try{ const blob = await D.Packer.toBlob(doc); await saveFile(fileBase()+".docx", blob); }
+  catch(e){ toast("Could not build the Word file."); }
+}
+
+async function exportPdf(){
+  if(!window.jspdf || !window.jspdf.jsPDF){ toast("The PDF exporter did not load. Check your connection and reload."); return; }
+  const doc = new window.jspdf.jsPDF({unit:"mm", format:"letter"});
+  if(typeof doc.autoTable!=="function"){ toast("The PDF exporter did not load fully. Reload and try again."); return; }
+  const clean = s => String(s).replace(/[\u2018\u2019]/g,"'").replace(/[\u201C\u201D]/g,'"').replace(/[\u2013\u2014]/g,"-").replace(/[^\x09\x0A\x0D\x20-\x7E\xA0-\xFF]/g,"");
+  doc.setFont("helvetica","bold"); doc.setFontSize(15);
+  doc.text(clean("Unit Plan: " + (plan.meta.title || "Untitled")), 14, 18);
+  const body = buildRows().map(r=>[clean(r.label), clean(r.blocks.map(b=>(b.h? b.h+"\n":"")+b.text).join("\n\n"))]);
+  doc.autoTable({
+    startY:24, body, theme:"grid", margin:{left:14,right:14},
+    styles:{font:"helvetica", fontSize:9.5, cellPadding:2.6, valign:"top", overflow:"linebreak", lineColor:[180,190,200], lineWidth:0.2, textColor:[29,42,54]},
+    columnStyles:{0:{cellWidth:38, fillColor:[220,230,240], fontStyle:"bold"}, 1:{cellWidth:"auto"}}
+  });
+  await saveFile(fileBase()+".pdf", doc.output("blob"));
+}
+
+/* ---------- sample ---------- */
+function SAMPLE(){
+  const s = [
+    {id:"s1", code:"3.CC.1", text:"Engage effectively in a range of collaborative discussions (one-on-one, in groups, and teacher-led) on grade-appropriate topics and texts, building on others' ideas and expressing personal ideas clearly."},
+    {id:"s2", code:"3-LS4-4", text:"Make a claim about the merit of a solution to a problem caused when the environment changes and the types of plants and animals that live there may change."},
+    {id:"s3", code:"3.G.1", text:"Use labels and symbols to locate and identify physical and political features on maps and/or globes."},
+    {id:"s4", code:"3.G.4", text:"Identify the hemispheres; cardinal and intermediate directions; and determine the direction and distance from one place to another on a variety of maps and globes."},
+    {id:"s5", code:"3.CC.7", text:"Create oral presentations that maintain a clear focus, using various media when appropriate to emphasize or enhance certain facts or details."},
+    {id:"s6", code:"3-LS4-3", text:"Construct an argument with evidence that in a particular habitat some organisms can survive well, some survive less well, and some cannot survive at all."},
+    {id:"s7", code:"3.W.4", text:"Write narrative compositions in a variety of forms that establish an introduction, include descriptive details, dialogue, and transitions, and provide an ending."}
+  ];
+  const o = ["describe what humans, animals, and plants need to survive.","define different landforms and describe how they change.","create, use, and read map keys.","identify cardinal directions on a map.","design and label a map.","describe different habitats and how they help organisms survive.","explain how natural disasters affect people, plants, and animals.","write a narrative composition."].map((t,i)=>({id:"o"+(i+1), text:t}));
+  const L = (title,type,desc,materials,st,ob,time,procedure="",check="") => ({id:uid(), title, type, desc, materials, standards:st, objectives:ob, time, procedure, check});
+  return {
+    meta:{title:"The Map of Your World", grade:"Grade 3", subject:"Science, Social Studies, ELA", author:"", overview:"Students explore maps and map features, organisms and their habitats, landforms, and natural disasters. Connected lessons build an understanding of how natural disasters affect the environment and the organisms living in it."},
+    dq:{driving:"How would a natural disaster affect the map of your perfect place?", subs:["What do humans need to survive?","What is a map key? How do we use one?","What are the different kinds of habitats?","How do landforms change?","How do natural disasters affect people, organisms, and landforms?"]},
+    standards:s, objectives:o,
+    assess:{pre:"Unit survey on maps, habitats, and natural disasters (Canva).",
+      formative:[{id:uid(),title:"Treasure hunt",desc:"Students follow cardinal-direction clues to find their treasure.",link:""},{id:uid(),title:"Animal habitat matching",desc:"Groups match animal cards to habitats and explain their reasoning.",link:""},{id:uid(),title:"Frayer model",desc:"Students choose one landform or natural disaster and complete a Frayer model.",link:""}],
+      summative:[{id:uid(),title:"Map drawing",desc:"Students draw a map of their perfect place with a key."},{id:uid(),title:"Narrative writing",desc:"Students write how an assigned natural disaster would affect the landforms, organisms, and people in their perfect place."}]},
+    lessons:[
+      L("Introduction to the unit","ira","Introduce the driving question, define \"perfect\" together, discuss what humans need to survive, and read \"The Boy Who Loved Maps\".","Whiteboard and markers\n\"The Boy Who Loved Maps\" (read-aloud video)\nExit ticket",["s1","s6"],["o1"],"50 minutes","Before reading: Think-Pair-Share on \"What makes a place perfect?\"\nDuring reading: Pause to ask what the boy notices on his maps.\nAfter reading: Discuss what we will learn next.","Exit ticket"),
+      L("Maps and map features","detailed","Teach map keys and cardinal directions with a mnemonic, then practice with a treasure hunt and worksheet.","Teacher-drawn sample map\nNever Eat Soggy Waffles anchor chart\nDirection labels for the walls\nCampground worksheet\nPaper and coloring tools",["s3","s4"],["o3","o4","o5"],"60 minutes","Opening: Show sample map and ask what students notice.\nTeach: Map keys, compass rose, mnemonic.\nGuided practice: Treasure hunt.\nIndependent: Worksheet, then start drawing own map.\nClosing: Share one symbol from your key.","Treasure hunt and worksheet"),
+      L("Presentations","regular","Students learn active listening and presenting, then present their maps.","Presentation rubric\nStudent maps",["s5","s1"],["o5"],"60 minutes"),
+      L("Organisms' needs to survive","regular","Fishing for Clues activity and class song.","Fishing for Clues handout and song",["s6"],["o1"],"45 minutes"),
+      L("Habitats","detailed","Examine habitat slides and an anchor chart, do a habitat matching activity, then a Kahoot.","Habitat slides\nHabitat anchor chart\nAnimal habitat matching cards\nHabitat Kahoot",["s6","s1"],["o6"],"60 minutes","Opening: Anchor chart walk.\nTeach: Slides on forest, ocean, grassland, desert, arctic.\nGuided practice: Group matching and sharing reasons.\nClosing: Kahoot.","Kahoot results"),
+      L("Landforms","regular","Landform slides, matching cards, and a Frayer model.","Landform slides\nLandform matching cards\nFrayer model template",["s2"],["o2"],"2 class periods, 45 minutes each"),
+      L("Natural disasters","regular","Read-aloud introduction and four hands-on disaster stations, then a Kahoot.","Natural disasters book\nStation supplies (blocks, tray of water and sand, graham crackers and yogurt)\nNatural disaster Kahoot",["s2"],["o7"],"2 class periods, 45 minutes each"),
+      L("Narrative planning","regular","Review narrative writing parts, present the prompt and rubric, and plan.","Example narrative\nPlanning sheet\nRubric",["s7"],["o8"],"50 minutes"),
+      L("Drafting","regular","Students draft their narrative.","Lined paper\nPencils",["s7"],["o8"],"60 minutes"),
+      L("Revise, edit, and rewrite","regular","Students revise, edit, and write a final copy.","Revision checklist\nRubric\nFinal paper",["s7"],["o8"],"45 minutes")
+    ],
+    resources:{texts:"Field Detectives: Investigating Playground Habitats", tech:"Generation Genius science videos\nKahoot", other:""},
+    diff:{gifted:"Write 3 to 5 narrative paragraphs. Present more map features than the rubric requires.", support:"Extra time. Write one narrative paragraph. Present to the teacher instead of the class. Tell the narrative out loud before writing. Help with map drawing as needed.", other:""},
+    reflect:{worked:"", improve:""}
+  };
+}
+
+renderAll();
+if(load()) document.getElementById("saveState").textContent = "Saved in this browser";
+})();
+</script>
+</body>
+</html>
