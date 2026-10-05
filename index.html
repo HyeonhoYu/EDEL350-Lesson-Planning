@@ -217,6 +217,10 @@ img.tavatar{background:var(--soft);object-fit:contain;padding:2px}
 .tchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:0 0 14px}
 .tchips .tq{margin:0 4px 0 0}
 
+.tbtn{border:1px solid var(--line);background:var(--sheet);border-radius:6px;padding:6px 12px;cursor:pointer;font-weight:700;font-size:.9rem}
+.tbtn:hover{background:var(--soft)}
+.tbtn.on{background:var(--navy);color:var(--navy-ink);border-color:var(--navy)}
+
 /* tutor */
 .tutor-wrap{border:2px solid var(--navy);border-radius:10px;margin:0 0 26px;background:var(--sheet)}
 .tutor-wrap > summary{cursor:pointer;padding:12px 16px;font-family:var(--serif);font-weight:700;font-size:1.1rem;list-style:none;background:var(--soft);border-radius:8px}
@@ -318,7 +322,7 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const filled = s => typeof s === "string" && s.trim().length > 0;
 
-function blankLesson(){ return {id:uid(), title:"", type:"regular", strand:"", desc:"", materials:"", standards:[], objectives:[], procedure:"", check:"", time:""}; }
+function blankLesson(){ return {id:uid(), title:"", type:"", strand:"", desc:"", materials:"", standards:[], objectives:[], procedure:"", check:"", time:""}; }
 function blankTutor(){ return {step:0, topic:"", seed:0, picked:"", why:"", type:"", focus:[], role:"", task:"", purpose:"", audience:"", issue:"", local:"", draft:"", self:[], bigIdea:"", understanding:"", essential:"", evidence:{}, prepost:"", rubric:""}; }
 function blankCurr(){ return {ckla:"", grade:"", domain:"", domainOther:"", skills:"", skillsOther:"", relation:"", explain:""}; }
 function blankPlan(){
@@ -358,7 +362,7 @@ function normalize(p){
   out.diff = Object.assign({gifted:"",support:"",other:""}, p.diff||{});
   out.reflect = Object.assign({worked:"",improve:""}, p.reflect||{});
   ["standards","objectives","lessons"].forEach(k => { if(!Array.isArray(out[k])) out[k] = b[k]; });
-  out.lessons = out.lessons.map(l => Object.assign(blankLesson(), l));
+  out.lessons = out.lessons.map(l => { const x = Object.assign(blankLesson(), l); if(x.type!=="ira" && x.type!=="detailed") x.type=""; return x; });
   return out;
 }
 let saveTimer = null;
@@ -512,15 +516,15 @@ const RENDER = {
     const cards = plan.lessons.map((l,i)=>{
       const tag = l.type==="ira" ? '<span class="tag ira">IRA</span>' : l.type==="detailed" ? '<span class="tag detailed">Detailed plan</span>' : "";
       const missing = (!filled(l.title)||!filled(l.desc)||!filled(l.materials)||!filled(l.time)) ? '<span class="tag miss">Incomplete</span>' : "";
-      const extra = l.type!=="regular" ? `
+      const extra = (l.type==="ira"||l.type==="detailed") ? `
         ${field("Step-by-step procedure", `lessons.${i}.procedure`, {req:true, multi:true, rows:6, hint: l.type==="ira" ? "Before reading, during reading, after reading. Include the questions you will ask." : "Opening, teaching, guided practice, independent practice, closing."})}
         ${field("How you will check for understanding", `lessons.${i}.check`, {multi:true, rows:2})}` : "";
       return `<details class="lesson" data-lid="${l.id}" ${openLessons.has(l.id)?"open":""}>
         <summary><span class="lnum">Lesson ${i+1}</span><span class="ltitle ${filled(l.title)?"":"empty"}">${filled(l.title)?esc(l.title):"No title yet"}</span>${tag}${missing}</summary>
         <div class="lbody">
           ${field("Lesson title", `lessons.${i}.title`, {req:true, ph:"e.g., Habitats"})}
-          <div class="field"><span class="flabel">Lesson type</span><div class="type-pick" role="radiogroup" aria-label="Lesson ${i+1} type">
-            ${[["regular","Regular"],["ira","IRA (interactive read-aloud)"],["detailed","Detailed plan"]].map(([v,t])=>`<label><input type="radio" name="type_${l.id}" data-path="lessons.${i}.type" value="${v}" ${l.type===v?"checked":""}>${t}</label>`).join("")}
+          <div class="field"><span class="flabel">Lesson type</span><span class="hint">Mark your IRA lesson and your two detailed plans. Leave the other lessons unmarked. Click a selected type again to clear it.</span><div class="type-pick" role="group" aria-label="Lesson ${i+1} type">
+            ${[["ira","IRA (interactive read-aloud)"],["detailed","Detailed plan"]].map(([v,tx])=>`<button type="button" class="tbtn ${l.type===v?"on":""}" aria-pressed="${l.type===v}" data-act="ltype" data-i="${i}" data-v="${v}">${tx}</button>`).join("")}
           </div></div>
           ${field("Brief description of the activity", `lessons.${i}.desc`, {req:true, multi:true, rows:3})}
           ${field("Materials required", `lessons.${i}.materials`, {req:true, multi:true, rows:4, hint: cklaOn() ? "Books, slides, worksheets, links, and supplies. One per line. You can also use classroom CKLA materials such as Flip Books, Image Cards, Student Readers, and Activity Books." : "Books, slides, worksheets, links, and supplies. One per line works well."})}
@@ -998,7 +1002,7 @@ function checkPlan(){
     const n = `Lesson ${i+1}${filled(l.title)?" ("+l.title.trim()+")":""}`;
     const miss = [];
     if(!filled(l.title)) miss.push("title"); if(!filled(l.desc)) miss.push("description"); if(!filled(l.materials)) miss.push("materials"); if(!filled(l.time)) miss.push("estimated time");
-    if(l.type!=="regular" && !filled(l.procedure)) miss.push("step-by-step procedure");
+    if((l.type==="ira"||l.type==="detailed") && !filled(l.procedure)) miss.push("step-by-step procedure");
     if(miss.length) E("lessons",`${n} is missing: ${miss.join(", ")}.`, l.id);
     else if(!l.standards.length) W("lessons",`${n} is not linked to any standard.`, l.id);
   });
@@ -1134,6 +1138,10 @@ document.addEventListener("click", e=>{
     t.picked = x.text; t.draft = x.text; t.type = x.type; t.role = x.role||""; t.task = x.task||""; t.audience = x.audience||""; t.purpose = "";
     save(); renderMain(); const f=document.getElementById("f_dqTutor_why"); if(f) f.focus(); return;
   }
+  if(act==="ltype"){
+    const l = plan.lessons[+b.dataset.i]; l.type = l.type===b.dataset.v ? "" : b.dataset.v;
+    openLessons.add(l.id); rememberOpen(); save(); renderSteps(); renderMain(); return;
+  }
   if(act==="addstd"){
     const code=b.dataset.code, text=b.dataset.text, list=plan.standards;
     if(!list.some(s=>(s.code||"").trim()===code)){
@@ -1232,7 +1240,7 @@ function buildRows(){
       {h:"Standards", text:codesFor(l.standards)},
       {h:"Objectives", text:objsFor(l.objectives)},
       {h:"CKLA connection", text: p.curr.ckla==="yes" ? ({knowledge:"Knowledge Strand",skills: cklaK2()?"Skills Strand":"Practices skills from CKLA",both:"Knowledge and Skills Strands",unit:"Connects to the CKLA unit"}[l.strand]||"") : ""},
-      ...(l.type!=="regular" ? [{h:"Procedure", text:l.procedure}, {h:"Check for understanding", text:l.check}] : []),
+      ...((l.type==="ira"||l.type==="detailed") ? [{h:"Procedure", text:l.procedure}, {h:"Check for understanding", text:l.check}] : []),
       {h:"Estimated time", text:l.time}
     ]);
   });
@@ -1322,14 +1330,14 @@ function SAMPLE(){
     lessons:[
       L("Introduction to the unit","ira","Introduce the driving question, define \"perfect\" together, discuss what humans need to survive, and read \"The Boy Who Loved Maps\".","Whiteboard and markers\n\"The Boy Who Loved Maps\" (read-aloud video)\nExit ticket",["s1","s6"],["o1"],"50 minutes","Before reading: Think-Pair-Share on \"What makes a place perfect?\"\nDuring reading: Pause to ask what the boy notices on his maps.\nAfter reading: Discuss what we will learn next.","Exit ticket"),
       L("Maps and map features","detailed","Teach map keys and cardinal directions with a mnemonic, then practice with a treasure hunt and worksheet.","Teacher-drawn sample map\nNever Eat Soggy Waffles anchor chart\nDirection labels for the walls\nCampground worksheet\nPaper and coloring tools",["s3","s4"],["o3","o4","o5"],"60 minutes","Opening: Show sample map and ask what students notice.\nTeach: Map keys, compass rose, mnemonic.\nGuided practice: Treasure hunt.\nIndependent: Worksheet, then start drawing own map.\nClosing: Share one symbol from your key.","Treasure hunt and worksheet"),
-      L("Presentations","regular","Students learn active listening and presenting, then present their maps.","Presentation rubric\nStudent maps",["s5","s1"],["o5"],"60 minutes"),
-      L("Organisms' needs to survive","regular","Fishing for Clues activity and class song.","Fishing for Clues handout and song",["s6"],["o1"],"45 minutes"),
+      L("Presentations","","Students learn active listening and presenting, then present their maps.","Presentation rubric\nStudent maps",["s5","s1"],["o5"],"60 minutes"),
+      L("Organisms' needs to survive","","Fishing for Clues activity and class song.","Fishing for Clues handout and song",["s6"],["o1"],"45 minutes"),
       L("Habitats","detailed","Examine habitat slides and an anchor chart, do a habitat matching activity, then a Kahoot.","Habitat slides\nHabitat anchor chart\nAnimal habitat matching cards\nHabitat Kahoot",["s6","s1"],["o6"],"60 minutes","Opening: Anchor chart walk.\nTeach: Slides on forest, ocean, grassland, desert, arctic.\nGuided practice: Group matching and sharing reasons.\nClosing: Kahoot.","Kahoot results"),
-      L("Landforms","regular","Landform slides, matching cards, and a Frayer model.","Landform slides\nLandform matching cards\nFrayer model template",["s2"],["o2"],"2 class periods, 45 minutes each"),
-      L("Natural disasters","regular","Read-aloud introduction and four hands-on disaster stations, then a Kahoot.","Natural disasters book\nStation supplies (blocks, tray of water and sand, graham crackers and yogurt)\nNatural disaster Kahoot",["s2"],["o7"],"2 class periods, 45 minutes each"),
-      L("Narrative planning","regular","Review narrative writing parts, present the prompt and rubric, and plan.","Example narrative\nPlanning sheet\nRubric",["s7"],["o8"],"50 minutes"),
-      L("Drafting","regular","Students draft their narrative.","Lined paper\nPencils",["s7"],["o8"],"60 minutes"),
-      L("Revise, edit, and rewrite","regular","Students revise, edit, and write a final copy.","Revision checklist\nRubric\nFinal paper",["s7"],["o8"],"45 minutes")
+      L("Landforms","","Landform slides, matching cards, and a Frayer model.","Landform slides\nLandform matching cards\nFrayer model template",["s2"],["o2"],"2 class periods, 45 minutes each"),
+      L("Natural disasters","","Read-aloud introduction and four hands-on disaster stations, then a Kahoot.","Natural disasters book\nStation supplies (blocks, tray of water and sand, graham crackers and yogurt)\nNatural disaster Kahoot",["s2"],["o7"],"2 class periods, 45 minutes each"),
+      L("Narrative planning","","Review narrative writing parts, present the prompt and rubric, and plan.","Example narrative\nPlanning sheet\nRubric",["s7"],["o8"],"50 minutes"),
+      L("Drafting","","Students draft their narrative.","Lined paper\nPencils",["s7"],["o8"],"60 minutes"),
+      L("Revise, edit, and rewrite","","Students revise, edit, and write a final copy.","Revision checklist\nRubric\nFinal paper",["s7"],["o8"],"45 minutes")
     ],
     resources:{texts:"Field Detectives: Investigating Playground Habitats", tech:"Generation Genius science videos\nKahoot", other:""},
     diff:{gifted:"Write 3 to 5 narrative paragraphs. Present more map features than the rubric requires.", support:"Extra time. Write one narrative paragraph. Present to the teacher instead of the class. Tell the narrative out loud before writing. Help with map drawing as needed.", other:""},
