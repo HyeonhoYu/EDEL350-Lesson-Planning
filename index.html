@@ -546,31 +546,31 @@ const TSTEPS = ["Begin with the end", "Suggested questions", "Make it yours", "S
 const CATS = [
   {k:"write", re:/\b(write|writing|composition|narrative|informative|essay)/i, what:"write",
     products:["picture book","guidebook","newspaper article","class magazine"], roles:["authors","news reporters"],
-    subs:t=>[`What makes a piece of writing about ${t} clear and interesting to read?`]},
+    subs:(t,V)=>[`What makes a piece of writing about ${t} clear and interesting to read?`, `What do readers need to know first about ${t}?`, `How do authors use details and pictures to teach about ${t}?`]},
   {k:"present", re:/\b(present|presentation|oral|speak|recite|perform)/i, what:"present",
     products:["museum exhibit","video","presentation"], roles:["museum guides","TV reporters"],
-    subs:t=>[`How can we present what we learn about ${t} so our audience understands it?`]},
+    subs:(t,V)=>[`How can we present what we learn about ${t} so our audience understands it?`, `How can pictures, models, or video help people learn about ${t}?`, `What makes a good listener during a presentation?`]},
   {k:"map", re:/\b(map|maps|globe|globes|direction)/i, what:"use maps",
     products:["map","tour guide map"], roles:["mapmakers","tour guides"],
-    subs:t=>[`What should a map show, and how does a map key help people read it?`]},
+    subs:(t,V)=>[`What should a map show, and how does a map key help people read it?`, `How do we use directions to find places on a map?`, `How can a map help people understand ${t}?`]},
   {k:"design", re:/\b(design|designs|build|builds|engineer|engineers|model|models|prototype|solutions?)\b/i, what:"design or solve",
     products:["model","design plan","invention"], roles:["engineers","designers"],
-    subs:(t,V)=>[`What problems ${V.does} ${t} cause, and how could we design a solution?`]},
+    subs:(t,V)=>[`What problems ${V.does} ${t} cause, and how could we design a solution?`, `How can we test whether our solution works?`, `What materials could we use to build a model?`]},
   {k:"argue", re:/\b(argument|claim|evidence|debate|persuade|opinion)/i, what:"argue with evidence",
     products:["proposal","persuasive letter"], roles:["advisors","council members"],
-    subs:t=>[`What evidence can we use to support our claim about ${t}?`]},
+    subs:(t,V)=>[`What evidence can we use to support our claim about ${t}?`, `What do people disagree about when it comes to ${t}?`, `How can we use facts to change someone's mind?`]},
   {k:"data", re:/\b(data|graph|chart|measure|measurement|survey|collect)/i, what:"collect or show data",
     products:["field guide","survey report","chart display"], roles:["scientists","researchers"],
-    subs:t=>[`What data can we collect about ${t}, and how can we show it?`]},
+    subs:(t,V)=>[`What data can we collect about ${t}, and how can we show it?`, `What patterns do we see in our data?`, `How can a graph or chart help others understand ${t}?`]},
   {k:"science", re:/\b(organism|plant|animal|habitat|energy|force|motion|weather|climate|earth|matter|environment|ecosystem|life cycle|survive)/i, what:"investigate science",
     products:["field guide","model"], roles:["scientists","park rangers"],
-    subs:(t,V)=>[`What do scientists already know about ${t}?`, `How ${V.does} ${t} affect living things?`, `What patterns do we notice when we observe ${t}?`]},
+    subs:(t,V)=>[`What do scientists already know about ${t}?`, `How ${V.does} ${t} affect living things?`, `What patterns do we notice when we observe ${t}?`, `How can we observe or test our ideas about ${t} safely?`]},
   {k:"social", re:/\b(community|government|citizen|civic|history|historical|leader|culture|economic|region|indiana)/i, what:"study communities",
     products:["community event","action plan","class museum"], roles:["city planners","community leaders","historians"],
-    subs:(t,V)=>[`Who in our community is connected to ${t}?`, `How ${V.has} ${t} changed over time where we live?`]},
+    subs:(t,V)=>[`Who in our community is connected to ${t}?`, `How ${V.has} ${t} changed over time where we live?`, `What rules or leaders help our community with ${t}?`, `How do people in other places experience ${t}?`]},
   {k:"math", re:/\b(number|fraction|add|subtract|multiply|divide|area|perimeter|shape|geometry|equation|money|time)\b/i, what:"use math",
     products:["chart display","budget plan"], roles:["planners","designers"],
-    subs:t=>[`How can counting or measuring help us understand ${t}?`]}
+    subs:(t,V)=>[`How can counting or measuring help us understand ${t}?`, `How can we use numbers to compare things about ${t}?`, `What measurements would help us plan our project?`]}
 ];
 const STOP = new Set("about after again also because before being between both could does doing during each from have having into more most other should their there these they this those through under until very what when where which while will with would your students student grade level using examples include including understand".split(" "));
 
@@ -613,7 +613,7 @@ function suggestions(){
   const out = [];
   const used = new Set();
   const add = (type, text, info) => { if(used.has(text)) return; used.add(text); out.push(Object.assign({type, text}, info)); };
-  for(let i=0;i<2;i++){
+  for(let i=0;i<3;i++){
     const pr = pick(r, prodPool), a = pick(r, aud);
     const forms = [
       `How can we create ${art(pr.p)} about ${topic} for ${a}?`,
@@ -622,11 +622,12 @@ function suggestions(){
     ];
     add("product", forms[(i + (t.seed||0)) % forms.length], {product:pr.p, audience:a, codes:pr.codes, task:`create ${art(pr.p)} about ${topic}`});
   }
-  for(let i=0;i<2;i++){
+  for(let i=0;i<3;i++){
     const ro = pick(r, rolePool), pr = {p:pick(r, ro.products), codes:[]}, a = pick(r, aud);
     const forms = [
       `How can we, as ${ro.p}, create ${art(pr.p)} that teaches ${a} about ${topic}?`,
-      `How do we, as ${ro.p}, show ${a} why ${topic} ${V.matters} in ${local}?`
+      `How do we, as ${ro.p}, show ${a} why ${topic} ${V.matters} in ${local}?`,
+      `How can we, as ${ro.p}, plan ${art(pr.p)} that helps people in ${local} learn about ${topic}?`
     ];
     add("role", forms[(i + (t.seed||0)) % forms.length], {role:ro.p, product:pr.p, audience:a, codes:[...new Set([...ro.codes, ...pr.codes])], task:`create ${art(pr.p)} about ${topic}`});
   }
@@ -634,21 +635,34 @@ function suggestions(){
     `${cap(V.does)} ${topic} matter to people in ${local}?`,
     `What would ${local} be like without ${topic}?`,
     `Should everyone in ${local} learn about ${topic}?`,
-    `${cap(V.is)} ${topic} more helpful or more harmful to ${local}?`
+    `${cap(V.is)} ${topic} more helpful or more harmful to ${local}?`,
+    `How ${V.does} ${topic} change the way people live in ${local}?`,
+    `Should our school do more to teach families about ${topic}?`
   ];
-  const s0 = (t.seed||0) % deb.length;
-  add("debate", deb[s0], {codes:[], task:"share and defend their answer"});
-  add("debate", deb[(s0+1)%deb.length], {codes:[], task:"share and defend their answer"});
+  const s0 = ((t.seed||0)*3) % deb.length;
+  for(let i=0;i<3;i++) add("debate", deb[(s0+i)%deb.length], {codes:[], task:"share and defend their answer"});
   return out;
 }
 function subSuggestions(){
   const t = plan.dqTutor;
   const topic = filled(t.topic) ? t.topic.trim() : "___";
-  const found = detectCats();
-  const out = [{q:`What do we already know about ${topic}, and what do we need to find out?`, codes:[]}];
   const V = verbs(topic);
-  found.forEach(x=>x.c.subs(topic, V).forEach(q=>out.push({q, codes:x.codes})));
-  return out;
+  const groups = [];
+  const start = [`What do we already know about ${topic}, and what do we need to find out?`, `What words do we need to know to talk about ${topic}?`, `Why should we care about ${topic}?`];
+  if(filled(t.local)) start.push(`How ${V.does} ${topic} affect ${t.local.trim()}?`, `Where can we see ${topic} in ${t.local.trim()}?`);
+  groups.push({name:"Getting started", items:start.map(q=>({q, codes:[]}))});
+  const end = [];
+  if(t.type==="debate"){ end.push(`What is our answer to the driving question, and what evidence supports it?`, `What would someone who disagrees with us say?`); }
+  else {
+    const prod = (t.task||"").replace(/^create (an? )?/,"").replace(/ about .*$/,"");
+    if(prod) end.push(`What makes a great ${prod}?`);
+    if(filled(t.role)) end.push(`What do real ${t.role.trim()} do, and how can we work like them?`);
+    if(filled(t.audience)) end.push(`What do ${t.audience.trim()} already know about ${topic}, and what do they need to learn?`);
+    end.push(`How will we share our work, and how will we know it was successful?`);
+  }
+  groups.push({name:"For your end product", items:end.map(q=>({q, codes:[]}))});
+  detectCats().forEach(x=>groups.push({name:"To "+x.c.what, items:x.c.subs(topic, V).map(q=>({q, codes:x.codes}))}));
+  return groups;
 }
 
 function dqChecks(q){
@@ -666,7 +680,16 @@ function dqChecks(q){
   if(hits.length>=2) out.push(["warn",`It repeats standards vocabulary (${hits.slice(0,4).join(", ")}). You do not need to state the content in the question. Students will need it anyway to answer.`]);
   const long = words(s).filter(x=>x.length>=12);
   if(long.length) out.push(["warn",`Will your students understand "${long[0]}"? Use their words when you can.`]);
-  if(filled(plan.dqTutor.picked) && s===plan.dqTutor.picked.trim()) out.push(["warn","This is exactly the suggestion you picked. Make it yours: change words, add your school or town, or sharpen the task."]);
+  const pk = (plan.dqTutor.picked||"").trim();
+  if(pk){
+    const norm = x => words(x).join(" ");
+    if(norm(s)===norm(pk)) out.push(["warn","This is exactly the suggestion you picked. Make it yours: change words, add your school or town, or sharpen the task."]);
+    else {
+      const A = words(s), B = new Set(words(pk));
+      const same = A.filter(x=>B.has(x)).length / Math.max(A.length, B.size);
+      if(same>=0.85) out.push(["warn","This is still very close to the suggestion you picked. Try a bigger change: add your school or town, name a real audience, or give students a real job to do."]);
+    }
+  }
   if(!out.length) out.push(["ok","No problems found by the automatic check. Now use the four questions below."]);
   return out;
 }
@@ -750,15 +773,15 @@ const TUTOR = [
       + `<div class="tnav"><button class="btn" data-act="tstep" data-step="1">Back</button><span class="tright"><button class="btn" data-act="tuse">Use as my driving question</button><button class="btn primary" data-act="tstep" data-step="3">Next</button></span></div>`;
   },
   function(){
-    const subs = subSuggestions();
+    const groups = subSuggestions();
     const have = new Set(plan.dq.subs.filter(filled).map(s=>s.trim()));
     const n = plan.dq.subs.filter(filled).length;
     return `<h3 class="th">What will students need to learn to answer it?</h3>`
       + bubble(`Subquestions break the driving question into things students learn along the way. Each one should match a lesson. Add the ones that fit, then edit them in the list below the tutor.`)
-      + `<div class="sublist">${subs.map(x=>{
+      + groups.map(g=>`<div class="sgroup"><h4>${esc(g.name)}</h4><div class="sublist">${g.items.map(x=>{
           const added = have.has(x.q);
           return `<div class="scard ${added?"on":""}"><p>${esc(x.q)}</p>${x.codes.length?`<span class="scodes">Supports: ${esc(x.codes.join(", "))}</span>`:""}<button class="btn small" data-act="taddsub" data-v="${esc(x.q)}" ${added?"disabled":""}>${added?"Added":"Add"}</button></div>`;
-        }).join("")}</div>`
+        }).join("")}</div></div>`).join("")
       + bubble(n ? `You have ${n} subquestion${n>1?"s":""}. Most units need 5 or more. Write your own too: what would a student need to know first, next, and last?` : `Add at least one, then write a few of your own.`)
       + `<div class="tbtnrow"><button class="btn" data-act="tgo" data-target="dqFinal">Go to my subquestion list</button></div>`
       + tnav(2, 4);
