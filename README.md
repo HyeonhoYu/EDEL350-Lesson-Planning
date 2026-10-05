@@ -5,6 +5,7 @@ A guided website for preservice teachers to build a transdisciplinary unit plan 
 ## Features
 
 - Step-by-step sections that follow the unit plan template: unit basics, standards, driving question, learning objectives, assessments, 10 learning activities, resources, differentiation, and reflection
+- Classroom curriculum connection for Amplify CKLA (K-5): pick the domain or unit your mentor teacher is teaching, explain how your unit connects, and tag lessons by strand
 - Driving question tutor (Begin with the End in Mind) that walks students from their standards to an end product, a draft driving question, and evidence of learning
 - Plan check that flags missing items, leftover template text, near-duplicate objectives, and standards or objectives not taught in any lesson
 - Standards and objectives coverage tables

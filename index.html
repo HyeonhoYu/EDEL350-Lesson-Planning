@@ -309,10 +309,12 @@ const uid = () => Math.random().toString(36).slice(2, 9);
 const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const filled = s => typeof s === "string" && s.trim().length > 0;
 
-function blankLesson(){ return {id:uid(), title:"", type:"regular", desc:"", materials:"", standards:[], objectives:[], procedure:"", check:"", time:""}; }
+function blankLesson(){ return {id:uid(), title:"", type:"regular", strand:"", desc:"", materials:"", standards:[], objectives:[], procedure:"", check:"", time:""}; }
 function blankTutor(){ return {step:0, topic:"", seed:0, picked:"", why:"", type:"", focus:[], role:"", task:"", purpose:"", audience:"", issue:"", local:"", draft:"", self:[], bigIdea:"", understanding:"", essential:"", evidence:{}, prepost:"", rubric:""}; }
+function blankCurr(){ return {ckla:"", grade:"", domain:"", domainOther:"", skills:"", skillsOther:"", relation:"", explain:""}; }
 function blankPlan(){
   return {
+    curr:blankCurr(),
     meta:{title:"", grade:"", subject:"", author:"", overview:""},
     dq:{driving:"", subs:[""]},
     dqTutor:blankTutor(),
@@ -340,6 +342,7 @@ function normalize(p){
   out.meta = Object.assign(blankPlan().meta, p.meta||{});
   out.dq = Object.assign({driving:"", subs:[""]}, p.dq||{});
   out.dqTutor = Object.assign(blankTutor(), p.dqTutor||{});
+  out.curr = Object.assign(blankCurr(), p.curr||{});
   if(!out.dqTutor.evidence || typeof out.dqTutor.evidence!=="object") out.dqTutor.evidence = {};
   out.assess = Object.assign({pre:"", formative:[], summative:[]}, p.assess||{});
   out.resources = Object.assign({texts:"",tech:"",other:""}, p.resources||{});
@@ -416,7 +419,8 @@ const RENDER = {
     + field("Unit title", "meta.title", {req:true, ph:"e.g., The Map of Your World"})
     + `<div class="row2">${field("Grade level", "meta.grade", {req:true, ph:"e.g., Grade 3"})}${field("Content areas", "meta.subject", {ph:"e.g., Science, Social Studies, ELA"})}</div>`
     + field("Your name", "meta.author", {ph:"Shown on the exported plan"})
-    + field("Unit overview", "meta.overview", {req:true, multi:true, rows:5});
+    + field("Unit overview", "meta.overview", {req:true, multi:true, rows:5})
+    + cklaBlock();
   },
   dq(){
     const subs = plan.dq.subs.map((s,i)=>`<div class="li"><span class="idx">${i+1}.</span><div class="grow"><input type="text" data-path="dq.subs.${i}" value="${esc(s)}" aria-label="Subquestion ${i+1}" placeholder="Something students need to learn to answer the DQ"></div>${removeBtn("dq.subs",i,"subquestion")}</div>`).join("");
@@ -509,10 +513,11 @@ const RENDER = {
             ${[["regular","Regular"],["ira","IRA (interactive read-aloud)"],["detailed","Detailed plan"]].map(([v,t])=>`<label><input type="radio" name="type_${l.id}" data-path="lessons.${i}.type" value="${v}" ${l.type===v?"checked":""}>${t}</label>`).join("")}
           </div></div>
           ${field("Brief description of the activity", `lessons.${i}.desc`, {req:true, multi:true, rows:3})}
-          ${field("Materials required", `lessons.${i}.materials`, {req:true, multi:true, rows:4, hint:"Books, slides, worksheets, links, and supplies. One per line works well."})}
+          ${field("Materials required", `lessons.${i}.materials`, {req:true, multi:true, rows:4, hint: cklaOn() ? "Books, slides, worksheets, links, and supplies. One per line. You can also use classroom CKLA materials such as Flip Books, Image Cards, Student Readers, and Activity Books." : "Books, slides, worksheets, links, and supplies. One per line works well."})}
           <div class="field"><span class="flabel">Standards addressed</span>${stdOpts(l,i)}</div>
           <div class="field"><span class="flabel">Objectives addressed</span>${objOpts(l,i)}</div>
           ${extra}
+          ${cklaOn() ? `<div class="field"><label for="st_${l.id}">CKLA connection</label>${sel(`lessons.${i}.strand`, cklaK2() ? [["","None"],["knowledge","Knowledge Strand (read-alouds, content)"],["skills","Skills Strand (phonics, decoding, writing skills)"],["both","Both strands"]] : [["","None"],["unit","Connects to the CKLA unit"],["skills","Practices skills from CKLA"]], l.strand, {id:"st_"+l.id})}</div>` : ""}
           ${field("Estimated time", `lessons.${i}.time`, {req:true, ph:"e.g., 50 minutes"})}
           <div style="text-align:right;margin-bottom:10px">${removeBtn("lessons",i,"lesson")}</div>
         </div></details>`;
@@ -542,7 +547,7 @@ const RENDER = {
         "Consider English learners and students with IEPs in the Other field."
       ], "Additional support: Students may tell their narrative to the teacher out loud before writing, and write one paragraph instead of three to five.")
     + field("For gifted learners", "diff.gifted", {req:true, multi:true, rows:3})
-    + field("For students requiring additional support", "diff.support", {req:true, multi:true, rows:4})
+    + field("For students requiring additional support", "diff.support", {req:true, multi:true, rows:4, hint: cklaOn() ? (["K","1","2","3"].includes(plan.curr.grade) ? "Ask your mentor teacher about the CKLA Assessment and Remediation Guide for reteaching and extra practice." : "Ask your mentor teacher about the CKLA Decoding and Encoding Supplement for targeted skill practice.") : ""})
     + field("Other strategies (English learners, IEP, 504, etc.)", "diff.other", {multi:true, rows:3});
   },
   reflect(){
@@ -573,6 +578,60 @@ const RENDER = {
 
 /* ---------- driving question tutor ---------- */
 const TSTEPS = ["Begin with the end", "Suggested questions", "Make it yours", "Subquestions", "How will you know?"];
+
+/* ---------- Amplify CKLA (unit titles from amplify.com "What's included" pages) ---------- */
+const CKLA_LINKS = {k2:"https://amplify.com/programs/amplify-core-knowledge-language-arts/whats-included-k-2/", g35:"https://amplify.com/programs/amplify-core-knowledge-language-arts/whats-included-3-5/"};
+const CKLA = {
+  K:{domains:["Nursery Rhymes and Fables","The Five Senses","Stories","Plants","Farms","Native Americans","Kings and Queens","Seasons and Weather","Columbus and the Pilgrims","Colonial Towns and Townspeople","Taking Care of the Earth","Presidents and American Symbols"], skills:10},
+  "1":{domains:["Fables and Stories","The Human Body","Different Lands, Similar Stories","Early World Civilizations","Early American Civilizations","Astronomy","The History of the Earth","Animals and Habitats","Fairy Tales","A New Nation: American Independence","Frontier Explorers"], skills:7},
+  "2":{domains:["Fairy Tales and Tall Tales","Early Asian Civilizations","Ancient Greek Civilization","Greek Myths","The War of 1812","Cycles in Nature","Westward Expansion","Insects","The U.S. Civil War","Human Body: Building Blocks and Nutrition","Immigration","Fighting for a Cause"], skills:6},
+  "3":{units:["Classic Tales: The Wind in the Willows","Animal Classification","The Human Body: Systems and Senses","The Ancient Roman Civilization","Light and Sound","The Viking Age","Astronomy: Our Solar System and Beyond","Native Americans: Regions and Cultures","Early Explorations of North America","Colonial America","Ecology"]},
+  "4":{units:["Personal Narratives","Empires in the Middle Ages","Poetry","Eureka! Student Inventor","Geology","Contemporary Fiction","American Revolution","Treasure Island","Writing Quest: The Contraption"]},
+  "5":{units:["Personal Narratives","Early American Civilizations","Poetry","Adventures of Don Quixote","The Renaissance","The Reformation","A Midsummer Night's Dream","Native Americans","Chemical Matter","Writing Quest: The Robot"]}
+};
+const CKLA_REL = [["extends","Goes deeper into the same topic"],["before","Builds background before the class starts it"],["applies","Applies the skills students are learning"],["different","Different topic (explain the link)"]];
+const PROPER = new Set("native americans american americas u.s. greek roman asian viking columbus pilgrims earth north renaissance reformation don quixote midsummer night's dream treasure island civil war 1812 independence nation willows alice wonderland eureka mango street".split(" "));
+function topicFromTitle(s){ const x = s.includes(":") && s.split(":")[1].trim().split(" ").length>=2 && !/^(the human body|human body)/i.test(s) ? s.split(":")[1].trim() : s; return x.split(/\s+/).map(w=>PROPER.has(w.toLowerCase())?w:w.toLowerCase()).join(" "); }
+function cklaOn(){ return plan.curr && plan.curr.ckla==="yes"; }
+function cklaK2(){ return ["K","1","2"].includes(plan.curr.grade); }
+function cklaDomain(){ const c=plan.curr; const v = c.domain==="__other" ? c.domainOther : c.domain; return filled(v) ? v.trim() : ""; }
+function cklaSkills(){ const c=plan.curr; if(c.skills==="__other") return filled(c.skillsOther)?c.skillsOther.trim():""; return filled(c.skills)?c.skills:""; }
+function sel(path, opts, cur, o={}){
+  return `<select data-path="${path}" ${o.rerender?'data-rerender="1"':""} ${o.id?`id="${o.id}"`:""} ${o.label?`aria-label="${esc(o.label)}"`:""}>${opts.map(([v,l])=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(l)}</option>`).join("")}</select>`;
+}
+function guessGrade(){ const g=(plan.meta.grade||"").toLowerCase(); if(/\b(k|kindergarten)\b/.test(g)) return "K"; const m=g.match(/\b([1-5])\b/); return m?m[1]:""; }
+function cklaBlock(){
+  const c = plan.curr;
+  if(!filled(c.grade) && guessGrade()) c.grade = guessGrade();
+  const yes = c.ckla==="yes";
+  let body = "";
+  if(yes){
+    const gopts = [["","Choose a grade"],["K","Kindergarten"],["1","Grade 1"],["2","Grade 2"],["3","Grade 3"],["4","Grade 4"],["5","Grade 5"]];
+    body += `<div class="field"><label for="ckGrade">CKLA grade</label>${sel("curr.grade", gopts, c.grade, {rerender:true, id:"ckGrade"})}</div>`;
+    const g = CKLA[c.grade];
+    if(g){
+      const k2 = cklaK2();
+      const list = k2 ? g.domains : g.units;
+      const dopts = [["", k2?"Choose a Knowledge Domain":"Choose a unit"]].concat(list.map((n,i)=>[n,`${k2?"Domain":"Unit"} ${i+1}: ${n}`])).concat([["__other","Not listed (type it)"]]);
+      body += `<div class="field"><label for="ckDom">${k2?"Knowledge Domain your mentor teacher is teaching":"CKLA unit your mentor teacher is teaching"}</label>${sel("curr.domain", dopts, c.domain, {rerender:true, id:"ckDom"})}</div>`;
+      if(c.domain==="__other") body += field("Domain or unit name", "curr.domainOther", {ph:"Type the name used in your classroom"});
+      if(k2){
+        const sopts = [["","Choose a Skills Unit (optional)"]].concat(Array.from({length:g.skills},(_,i)=>[`Skills Unit ${i+1}`,`Skills Unit ${i+1}`])).concat([["__other","Not listed (type it)"]]);
+        body += `<div class="field"><label for="ckSk">Skills Unit</label>${sel("curr.skills", sopts, c.skills, {rerender:true, id:"ckSk"})}</div>`;
+        if(c.skills==="__other") body += field("Skills Unit name", "curr.skillsOther", {});
+      }
+      body += `<p class="note">Titles follow the unit lists on Amplify's site (<a href="${CKLA_LINKS.k2}" target="_blank" rel="noopener noreferrer">K-2</a>, <a href="${CKLA_LINKS.g35}" target="_blank" rel="noopener noreferrer">3-5</a>). Your classroom may use a different edition with different titles. If so, choose "Not listed" and type the name.</p>`;
+      body += `<div class="field"><span class="flabel">How does your unit connect to it?</span><div class="type-pick">${CKLA_REL.map(([v,l])=>`<label><input type="radio" name="ckrel" data-path="curr.relation" value="${v}" ${c.relation===v?"checked":""}>${l}</label>`).join("")}</div></div>`;
+      body += field("Explain the connection in one or two sentences", "curr.explain", {multi:true, rows:2, hint:"Design your own unit. Do not copy the CKLA unit; extend it, prepare for it, or let students use what they are learning in it."});
+    }
+  }
+  return `<div class="block"><h3>Classroom curriculum connection</h3><p class="sub">Longfellow uses Amplify CKLA for literacy. Connecting your unit to what your mentor teacher is teaching makes it easier to teach during practicum.</p>
+    <div class="field"><span class="flabel">Does your practicum classroom use Amplify CKLA?</span><div class="type-pick">
+      <label><input type="radio" name="ckyes" data-path="curr.ckla" value="yes" ${yes?"checked":""}>Yes</label>
+      <label><input type="radio" name="ckyes" data-path="curr.ckla" value="no" ${c.ckla==="no"?"checked":""}>No or not sure</label>
+    </div></div>${body}</div>`;
+}
+
 const CATS = [
   {k:"write", re:/\b(write|writing|composition|narrative|informative|essay)/i, what:"write",
     products:["picture book","guidebook","newspaper article","class magazine"], roles:["authors","news reporters"],
@@ -748,6 +807,7 @@ const TUTOR = [
       + bubble(`A driving question organizes every activity in your unit by stating its purpose. I will suggest some driving questions built from your standards. First, tell me two things.`)
       + summary
       + (miss.length ? bubble(`You still need ${miss.map(m=>`<button class="btn link" data-act="nav" data-sec="${m[0]}">${m[1]}</button>`).join(" and ")}. My suggestions are better when those are done.`) : "")
+      + (cklaOn() && cklaDomain() && !filled(plan.dqTutor.topic) ? bubble(`Your mentor teacher is teaching <b>${esc(cklaDomain())}</b>. Want to start from that topic? <button class="btn small" data-act="tckla">Use it as my topic</button>`) : "")
       + tfield("Your topic in a few words", "topic", {req:true, hint:"Write it the way you would say it to students, so it fits into a question. Example: natural disasters, plant life cycles, our town's history.", ph:"e.g., natural disasters"})
       + tfield("A place your students know", "local", {hint:"Optional. Your school, town, or county makes the question feel real.", ph:"e.g., Longfellow Elementary, Muncie"})
       + tnav(null, 1, "Show me suggestions");
@@ -905,6 +965,11 @@ function checkPlan(){
   const objIds = new Set(L.flatMap(l=>l.objectives));
   objs.forEach(o=>{ if(!objIds.has(o.id)) W("lessons",`Objective ${p.objectives.indexOf(o)+1} is not taught in any lesson.`); });
 
+  if(p.curr.ckla==="yes"){
+    if(!cklaDomain()) W("overview","Choose the CKLA domain or unit your mentor teacher is teaching.");
+    if(!filled(p.curr.relation) || !filled(p.curr.explain)) W("overview","Explain how your unit connects to the CKLA domain or unit.");
+    if(!p.lessons.some(l=>filled(l.strand))) W("lessons","None of your lessons is marked as connecting to CKLA.");
+  }
   if(!filled(p.resources.texts)) E("resources","List the main texts and online resources.");
   if(!filled(p.diff.gifted)) E("diff","Add a strategy for gifted learners.");
   if(!filled(p.diff.support)) E("diff","Add a strategy for students who need more support.");
@@ -965,6 +1030,7 @@ main.addEventListener("input", e=>{
 });
 main.addEventListener("change", e=>{
   const t = e.target;
+  if(t.tagName==="SELECT" && t.dataset.path && t.dataset.rerender){ setP(t.dataset.path, t.value); save(); renderSteps(); renderMain(); return; }
   if(t.type==="radio" && t.dataset.path){ setP(t.dataset.path, t.value); save(); rememberOpen(); renderSteps(); renderMain(); return; }
   if(t.dataset.link){
     const arr = getP(t.dataset.link);
@@ -1026,6 +1092,7 @@ document.addEventListener("click", e=>{
     t.picked = x.text; t.draft = x.text; t.type = x.type; t.role = x.role||""; t.task = x.task||""; t.audience = x.audience||""; t.purpose = "";
     save(); renderMain(); const f=document.getElementById("f_dqTutor_why"); if(f) f.focus(); return;
   }
+  if(act==="tckla"){ plan.dqTutor.topic = topicFromTitle(cklaDomain()); save(); renderMain(); return; }
   if(act==="tshuffle"){ plan.dqTutor.seed = (plan.dqTutor.seed||0)+1; save(); renderMain(); return; }
   if(act==="taddsub"){
     const q = b.dataset.v, subs = plan.dq.subs; const i = subs.findIndex(s=>!filled(s));
@@ -1091,6 +1158,11 @@ function buildRows(){
   const add = (label, blocks) => rows.push({label, blocks: blocks.filter(b=>filled(b.text))});
   add("Unit Plan", [{text:p.meta.title}, {h:"Grade level", text:p.meta.grade}, {h:"Content areas", text:p.meta.subject}, {h:"Prepared by", text:p.meta.author}]);
   add("Unit Overview", [{text:p.meta.overview}]);
+  if(p.curr.ckla==="yes"){
+    const rel = (CKLA_REL.find(r=>r[0]===p.curr.relation)||[])[1]||"";
+    const gname = p.curr.grade==="K" ? "Kindergarten" : (filled(p.curr.grade) ? "Grade "+p.curr.grade : "");
+    add("Classroom Curriculum Connection", [{text:["Amplify CKLA", gname].filter(Boolean).join(", ")}, {h: ["K","1","2"].includes(p.curr.grade)?"Knowledge Domain":"CKLA Unit", text:cklaDomain()}, {h:"Skills Unit", text:cklaSkills()}, {h:"Connection", text:[rel, p.curr.explain].filter(filled).map(s=>s.trim()).join(". ")}]);
+  }
   add("Driving Question", [{text:p.dq.driving}]);
   if([p.dqTutor.bigIdea,p.dqTutor.understanding,p.dqTutor.essential].some(filled))
     add("Big Idea, Enduring Understanding, Essential Question", [{h:"Big Idea", text:p.dqTutor.bigIdea}, {h:"Enduring Understanding", text:p.dqTutor.understanding}, {h:"Essential Question", text:p.dqTutor.essential}]);
@@ -1107,6 +1179,7 @@ function buildRows(){
       {h:"Materials required", text:l.materials},
       {h:"Standards", text:codesFor(l.standards)},
       {h:"Objectives", text:objsFor(l.objectives)},
+      {h:"CKLA connection", text: p.curr.ckla==="yes" ? ({knowledge:"Knowledge Strand",skills: cklaK2()?"Skills Strand":"Practices skills from CKLA",both:"Knowledge and Skills Strands",unit:"Connects to the CKLA unit"}[l.strand]||"") : ""},
       ...(l.type!=="regular" ? [{h:"Procedure", text:l.procedure}, {h:"Check for understanding", text:l.check}] : []),
       {h:"Estimated time", text:l.time}
     ]);
